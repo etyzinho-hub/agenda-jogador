@@ -1,0 +1,2421 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0a0e1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Agenda do Jogador">
+<title>Agenda do Jogador</title>
+
+<!-- PWA Manifest em linha (permite instalar na tela inicial) -->
+<link rel="manifest" href='data:application/manifest+json,{"name":"Agenda do Jogador","short_name":"Agenda","start_url":".","display":"standalone","background_color":"%230a0e1a","theme_color":"%2322c55e","icons":[{"src":"data:image/svg%2Bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgcng9IjIwIiBmaWxsPSIjMjJjNTVlIi8+PHBhdGggZD0iTTUwIDIwIGwxNSAxNSA4IDIzLTE1IDE1LTI5IDAgLTE1LTE1IDgtMjMgMTUtMTV6IiBmaWxsPSIjMDYyMTBmIi8+PC9zdmc%2B","sizes":"100x100","type":"image/svg+xml"}]}'>
+
+<!-- Favicon em linha -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgcng9IjIwIiBmaWxsPSIjMjJjNTVlIi8+PHBhdGggZD0iTTUwIDIwIGwxNSAxNSA4IDIzLTE1IDE1LTI5IDAgLTE1LTE1IDgtMjMgMTUtMTV6IiBmaWxsPSIjMDYyMTBmIi8+PC9zdmc+">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --accent:#22c55e;--accent-dark:#16a34a;--accent-soft:rgba(34,197,94,.14);--accent-line:rgba(34,197,94,.28);
+  --bg:#0a0e1a;--bg-grad-1:rgba(34,197,94,.10);--bg-grad-2:rgba(56,189,248,.08);
+  --surface:#131826;--surface2:#1c2233;--surface3:#242c3f;--line:#2a3244;
+  --txt:#e8edf5;--muted:#8892a6;--amber:#f5b944;--danger:#ef4444;
+  --radius:18px;--shadow:0 8px 28px rgba(0,0,0,.35);
+  --sheet-bg:rgba(10,14,26,.92);--tabbar-bg:rgba(10,14,26,.82);
+}
+body.light{
+  --bg:#f3f6fb;--surface:#ffffff;--surface2:#f6f8fc;--surface3:#eaeff7;--line:#e0e6f0;
+  --txt:#0f1729;--muted:#67728a;--shadow:0 8px 28px rgba(15,23,41,.08);
+  --sheet-bg:rgba(255,255,255,.92);--tabbar-bg:rgba(255,255,255,.85);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg);
+  background-image:radial-gradient(circle at 15% -10%, var(--bg-grad-1), transparent 45%),radial-gradient(circle at 90% 0%, var(--bg-grad-2), transparent 40%);
+  background-attachment:fixed;color:var(--txt);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Inter","Helvetica Neue",sans-serif;
+  font-size:15px;line-height:1.45;min-height:100dvh;
+  padding-bottom:calc(88px + env(safe-area-inset-bottom));
+  overscroll-behavior-y:none;-webkit-font-smoothing:antialiased;transition:background-color .25s ease,color .25s ease;
+}
+body.locked{overflow:hidden}
+button,input,textarea,select{font-family:inherit;font-size:16px}
+::selection{background:var(--accent-soft);color:var(--txt)}
+svg{display:block}
+
+#splash{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;background:var(--bg);background-image:radial-gradient(circle at 20% 10%, var(--bg-grad-1), transparent 50%),radial-gradient(circle at 85% 90%, var(--bg-grad-2), transparent 50%);transition:opacity .5s ease}
+#splash.hide{opacity:0;pointer-events:none}
+#splash .s-logo{width:96px;height:96px;border-radius:28px;background:linear-gradient(145deg,var(--accent),var(--accent-dark));display:grid;place-items:center;box-shadow:0 0 0 1px var(--accent-line), 0 20px 50px var(--accent-soft);animation:splashPop .6s cubic-bezier(.34,1.56,.64,1)}
+#splash .s-logo svg{width:54px;height:54px;color:#06210f}
+@keyframes splashPop{0%{transform:scale(.5) rotate(-12deg);opacity:0}60%{transform:scale(1.08) rotate(2deg);opacity:1}100%{transform:scale(1) rotate(0);opacity:1}}
+
+#login{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;gap:22px;background:var(--bg);background-image:radial-gradient(circle at 20% 10%, var(--bg-grad-1), transparent 45%),radial-gradient(circle at 85% 90%, var(--bg-grad-2), transparent 50%);overflow:hidden}
+#login::before,#login::after{content:'';position:absolute;border-radius:50%;filter:blur(60px);opacity:.35;pointer-events:none;z-index:0}
+#login::before{width:280px;height:280px;background:var(--accent);top:-80px;left:-80px}
+#login::after{width:240px;height:240px;background:#38bdf8;bottom:-70px;right:-70px}
+#login .logo{position:relative;z-index:1;width:84px;height:84px;border-radius:26px;background:linear-gradient(145deg,var(--accent),var(--accent-dark));display:grid;place-items:center;box-shadow:0 0 0 1px var(--accent-line), 0 18px 40px var(--accent-soft);animation:pop .5s cubic-bezier(.34,1.56,.64,1)}
+#login .logo svg{width:46px;height:46px;color:#06210f}
+@keyframes pop{0%{transform:scale(.6);opacity:0}100%{transform:scale(1);opacity:1}}
+#login h1{position:relative;z-index:1;margin:0;font-size:23px;letter-spacing:-.5px;font-weight:700;text-align:center}
+#login .sub{position:relative;z-index:1;margin:-14px 0 0;font-size:13px;color:var(--muted);text-align:center}
+#login form{position:relative;z-index:1;width:100%;max-width:340px;display:flex;flex-direction:column;gap:14px}
+#login label{display:block;font-size:12px;color:var(--muted);font-weight:600;margin-bottom:7px}
+#login input{width:100%;background:var(--surface);border:1px solid var(--line);color:var(--txt);border-radius:14px;padding:15px 16px;outline:none;transition:.2s}
+#login input:focus{border-color:var(--accent);background:var(--surface2);box-shadow:0 0 0 4px var(--accent-soft)}
+#login .erro{color:#ff9191;font-size:13px;text-align:center;min-height:18px;margin-top:-4px}
+.link-recovery{position:relative;z-index:1;background:none;border:0;color:var(--muted);font-size:13px;cursor:pointer;padding:8px;transition:.2s;font-weight:600}
+.link-recovery:hover{color:var(--accent)}
+
+.topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:calc(env(safe-area-inset-top) + 16px) 18px 16px;background:var(--sheet-bg);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-bottom:1px solid var(--line)}
+.topbar .tb-info{min-width:0;flex:1}
+.topbar h1{margin:0;font-size:17px;font-weight:700;letter-spacing:-.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar p{margin:2px 0 0;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tb-actions{display:flex;align-items:center;gap:8px}
+.icon-btn{width:40px;height:40px;border-radius:12px;flex:0 0 auto;background:var(--surface);border:1px solid var(--line);color:var(--muted);display:grid;place-items:center;cursor:pointer;transition:.2s}
+.icon-btn:hover{color:var(--txt);border-color:var(--surface3);background:var(--surface2)}
+.icon-btn:active{transform:scale(.94)}
+.avatar{width:44px;height:44px;border-radius:50%;flex:0 0 auto;display:grid;place-items:center;font-size:18px;font-weight:700;background:linear-gradient(145deg,var(--accent),var(--accent-dark));color:#06210f;cursor:pointer;overflow:hidden;box-shadow:0 0 0 2px var(--bg), 0 0 0 3px var(--accent-line);transition:.2s}
+.avatar:active{transform:scale(.94)}
+.avatar img{width:100%;height:100%;object-fit:cover;display:block}
+
+#view{padding:16px 14px 8px;max-width:640px;margin:0 auto;animation:fadeUp .3s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.strip{display:flex;align-items:center;justify-content:space-between;gap:12px;background:linear-gradient(135deg,var(--accent-soft),rgba(255,255,255,.02));border:1px solid var(--accent-line);border-radius:var(--radius);padding:16px 18px;margin-bottom:14px;box-shadow:var(--shadow)}
+.strip-label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);font-weight:700}
+.strip strong{font-size:23px;letter-spacing:-.6px;font-weight:700;display:block;margin-top:2px}
+.strip-right{text-align:right;font-size:12px;color:var(--muted);line-height:1.5}
+
+.filters{display:flex;gap:8px;margin-bottom:18px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.filters::-webkit-scrollbar{display:none}
+.chip{border:1px solid var(--line);background:var(--surface);color:var(--muted);padding:9px 16px;border-radius:999px;font-size:13px;font-weight:600;white-space:nowrap;cursor:pointer;transition:.2s}
+.chip:hover{background:var(--surface2);color:var(--txt)}
+.chip.active{background:var(--accent);border-color:var(--accent);color:#06210f;box-shadow:0 4px 14px var(--accent-soft)}
+
+.group-title{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin:22px 4px 10px}
+.group-title:first-child{margin-top:4px}
+
+.card{background:linear-gradient(180deg,var(--surface) 0%,var(--surface2) 140%);border:1px solid var(--line);border-left:3px solid var(--amber);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;transition:transform .15s,box-shadow .15s;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+.card:active{transform:scale(.985);box-shadow:0 6px 20px rgba(0,0,0,.15)}
+.card-main{display:flex;align-items:center;gap:14px;cursor:pointer}
+.date-badge{flex:0 0 52px;height:52px;border-radius:14px;background:linear-gradient(145deg,var(--surface3),var(--surface2));border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center}
+.date-badge .dd{font-size:18px;font-weight:800;line-height:1;letter-spacing:-.5px}
+.date-badge .mm{font-size:10px;text-transform:uppercase;color:var(--muted);letter-spacing:.6px;margin-top:3px;font-weight:700}
+.card-body{flex:1;min-width:0}
+.card-title{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.2px}
+.card-sub{font-size:12px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pills{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:7px;background:var(--surface2);border:1px solid var(--line);color:var(--muted);padding:7px 13px;border-radius:999px;font-size:12px;font-weight:600;cursor:pointer;transition:.2s}
+.pill .dot{width:7px;height:7px;border-radius:50%;background:var(--amber);flex:0 0 auto;transition:.2s}
+
+.empty{text-align:center;padding:64px 20px;color:var(--muted)}
+.empty svg{width:52px;height:52px;margin:0 auto 14px;opacity:.7}
+.empty p{margin:6px 0;font-size:14px}
+
+.panel{background:linear-gradient(180deg,var(--surface) 0%,var(--surface2) 160%);border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,.06)}
+.panel h3{margin:0 0 16px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.9px;color:var(--muted)}
+.field{display:block;margin-bottom:14px}
+.field > span{display:block;font-size:12px;color:var(--muted);margin-bottom:7px;font-weight:600}
+.field input,.field textarea,.field select{width:100%;background:var(--surface2);border:1px solid var(--line);color:var(--txt);border-radius:12px;padding:13px 14px;outline:none;transition:.2s}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--accent);background:var(--surface3);box-shadow:0 0 0 4px var(--accent-soft)}
+.field textarea{resize:vertical;min-height:76px}
+.row{display:flex;gap:10px}
+.row > *{flex:1;min-width:0}
+
+.btn{width:100%;background:var(--surface2);border:1px solid var(--line);color:var(--txt);padding:14px;border-radius:13px;font-weight:600;font-size:14px;cursor:pointer;margin-top:8px;transition:.2s}
+.btn:hover{background:var(--surface3);border-color:var(--surface3)}
+.btn:active{transform:scale(.98)}
+.btn.primary{background:linear-gradient(145deg,var(--accent),var(--accent-dark));border-color:var(--accent);color:#06210f;font-weight:700;box-shadow:0 6px 18px var(--accent-soft)}
+.btn.primary:hover{filter:brightness(1.06)}
+.btn.danger{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.3);color:#ff9191}
+.btn.danger:hover{background:rgba(239,68,68,.16)}
+.btn.ghost{background:transparent}
+.btn-sm{padding:10px 14px;font-size:13px;margin-top:6px}
+
+.switch{display:flex;align-items:center;gap:12px;padding:12px 0;cursor:pointer}
+.switch input{width:22px;height:22px;accent-color:var(--accent);flex:0 0 auto;cursor:pointer}
+.switch span{font-size:14px;font-weight:500}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.chip-static{display:inline-flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--line);padding:8px 10px 8px 14px;border-radius:999px;font-size:13px;font-weight:500}
+.chip-static button{background:rgba(255,255,255,.06);border:0;color:var(--muted);width:22px;height:22px;border-radius:50%;cursor:pointer;font-size:15px;line-height:1;display:grid;place-items:center;transition:.2s}
+.chip-static button:hover{background:rgba(239,68,68,.2);color:#ff9191}
+
+.muted{color:var(--muted);font-size:13px}
+.small{font-size:12px;line-height:1.6}
+
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.stat{background:linear-gradient(180deg,var(--surface) 0%,var(--surface2) 150%);border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+.stat .lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);font-weight:700}
+.stat .val{font-size:20px;font-weight:800;margin-top:7px;letter-spacing:-.5px}
+.stat.highlight{grid-column:1/-1;background:linear-gradient(135deg,var(--accent-soft),rgba(255,255,255,.02));border-color:var(--accent-line)}
+.stat.highlight .val{font-size:28px;color:var(--accent)}
+.stat.amber .val{color:var(--amber)}
+.stat.purple .val{color:#c084fc}
+
+.month-row{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid var(--line)}
+.month-row:last-child{border-bottom:0}
+.month-row .m-name{font-weight:600;font-size:14px;text-transform:capitalize}
+.month-row .m-sub{font-size:12px;color:var(--muted);margin-top:3px}
+.month-row .m-val{text-align:right;font-weight:700;font-size:14px}
+.month-row .m-val small{display:block;font-weight:500;font-size:11px;color:var(--muted);margin-top:3px}
+
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;padding:10px 10px calc(10px + env(safe-area-inset-bottom));background:var(--tabbar-bg);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid var(--line);gap:4px}
+.nav-btn{flex:1;background:none;border:0;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 0;font-size:10.5px;font-weight:600;cursor:pointer;transition:.2s;border-radius:14px}
+.nav-btn svg{width:22px;height:22px}
+.nav-btn.active{color:var(--accent);background:var(--accent-soft)}
+.nav-btn:hover:not(.active){color:var(--txt)}
+
+.fab{position:fixed;z-index:31;right:18px;bottom:calc(90px + env(safe-area-inset-bottom));width:60px;height:60px;border-radius:50%;border:0;background:linear-gradient(145deg,var(--accent),var(--accent-dark));color:#06210f;display:grid;place-items:center;cursor:pointer;box-shadow:0 10px 28px var(--accent-soft), 0 4px 14px rgba(0,0,0,.25);transition:.25s}
+.fab svg{width:28px;height:28px}
+.fab:hover{filter:brightness(1.08);transform:scale(1.04)}
+.fab:active{transform:scale(.9)}
+.fab.hidden{opacity:0;pointer-events:none;transform:scale(.5) translateY(20px)}
+
+.sheet{position:fixed;inset:0;z-index:60;background:var(--bg);background-image:radial-gradient(circle at 20% -10%, var(--bg-grad-1), transparent 45%);display:flex;flex-direction:column;transform:translateY(100%);visibility:hidden;transition:transform .32s cubic-bezier(.32,.72,0,1), visibility .32s}
+.sheet.open{transform:translateY(0);visibility:visible}
+.sheet-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:calc(env(safe-area-inset-top) + 16px) 18px 16px;border-bottom:1px solid var(--line);background:var(--sheet-bg);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.sheet-title{font-weight:700;font-size:15px}
+.link{background:none;border:0;color:var(--muted);font-size:15px;cursor:pointer;padding:8px 4px;transition:.2s}
+.link:hover{color:var(--txt)}
+.sheet-body{flex:1;overflow-y:auto;padding:20px 16px calc(40px + env(safe-area-inset-bottom))}
+.sheet-body form{max-width:640px;margin:0 auto}
+.full{width:100%}
+
+.avatar-picker{display:flex;align-items:center;gap:16px;margin-bottom:6px}
+.avatar-preview{width:76px;height:76px;border-radius:50%;flex:0 0 auto;background:linear-gradient(145deg,var(--accent),var(--accent-dark));color:#06210f;display:grid;place-items:center;font-size:30px;font-weight:800;overflow:hidden;box-shadow:0 0 0 3px var(--bg), 0 0 0 4px var(--accent-line)}
+.avatar-preview img{width:100%;height:100%;object-fit:cover;display:block}
+.avatar-actions{flex:1;display:flex;flex-direction:column;gap:8px}
+.avatar-actions .btn{margin-top:0;padding:11px;font-size:13px}
+
+.color-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+.color-swatch{aspect-ratio:1;border-radius:14px;border:2px solid transparent;cursor:pointer;transition:.2s;position:relative}
+.color-swatch::after{content:'';position:absolute;inset:0;border-radius:12px;box-shadow:inset 0 0 0 2px rgba(255,255,255,.08)}
+.color-swatch:hover{transform:scale(1.06)}
+.color-swatch.active{border-color:var(--txt);transform:scale(1.05)}
+.color-swatch.active::before{content:'✓';position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-weight:900;font-size:18px;text-shadow:0 1px 3px rgba(0,0,0,.55)}
+
+.dt-card{display:flex;align-items:center;gap:14px;background:var(--surface2);border:1px solid var(--line);border-radius:14px;padding:14px 16px;cursor:pointer;transition:.2s}
+.dt-card:hover{border-color:var(--accent);background:var(--surface3)}
+.dt-card:active{transform:scale(.985)}
+.dt-card .dt-icon{width:40px;height:40px;border-radius:11px;flex:0 0 auto;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center}
+.dt-card .dt-icon svg{width:20px;height:20px}
+.dt-card .dt-body{flex:1;min-width:0}
+.dt-card .dt-label{font-size:10.5px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.7px}
+.dt-card .dt-value{font-size:15px;font-weight:600;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dt-card .dt-value.placeholder{color:var(--muted);font-weight:500}
+.dt-card .dt-arrow{color:var(--muted);flex:0 0 auto}
+.dt-card .dt-arrow svg{width:18px;height:18px}
+
+.picker{position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .28s ease;backdrop-filter:blur(4px)}
+.picker.open{opacity:1;pointer-events:auto}
+.picker-card{width:100%;max-width:520px;background:var(--surface);color:var(--txt);border-top-left-radius:24px;border-top-right-radius:24px;border:1px solid var(--line);border-bottom:0;padding:20px 18px calc(24px + env(safe-area-inset-bottom));transform:translateY(30px);transition:transform .3s cubic-bezier(.32,.72,0,1);max-height:88vh;display:flex;flex-direction:column}
+.picker.open .picker-card{transform:translateY(0)}
+.picker-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.picker-title{font-weight:700;font-size:15px}
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:8px}
+.cal-month{font-weight:700;font-size:15px;text-transform:capitalize}
+.cal-nav{width:36px;height:36px;border-radius:11px;border:1px solid var(--line);background:var(--surface2);color:var(--txt);display:grid;place-items:center;cursor:pointer;transition:.2s}
+.cal-nav:hover{border-color:var(--accent);color:var(--accent)}
+.cal-nav svg{width:18px;height:18px}
+.cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:6px}
+.cal-weekdays span{text-align:center;font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal-day{aspect-ratio:1;border:0;background:transparent;color:var(--txt);border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;transition:.15s;display:grid;place-items:center}
+.cal-day:hover{background:var(--surface2)}
+.cal-day.other{color:var(--muted);opacity:.4}
+.cal-day.today{box-shadow:inset 0 0 0 1px var(--line);color:var(--accent)}
+.cal-day.selected{background:var(--accent);color:#06210f;box-shadow:0 6px 16px var(--accent-soft)}
+.cal-day.selected:hover{background:var(--accent)}
+.time-picker{display:flex;gap:12px;height:240px}
+.tp-col{flex:1;display:flex;flex-direction:column;min-width:0}
+.tp-header{text-align:center;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);padding:8px 0;border-bottom:1px solid var(--line)}
+.tp-scroll{flex:1;overflow-y:auto;padding:6px 0;scrollbar-width:thin}
+.tp-scroll::-webkit-scrollbar{width:4px}
+.tp-scroll::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}
+.tp-item{display:block;width:100%;border:0;background:transparent;color:var(--txt);padding:11px 0;font-size:16px;font-weight:600;cursor:pointer;transition:.15s;border-radius:10px}
+.tp-item:hover{background:var(--surface2)}
+.tp-item.selected{background:var(--accent);color:#06210f}
+
+.ac-wrap{position:relative}
+.ac-list{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:5;background:var(--surface3);border:1px solid var(--line);border-radius:12px;max-height:220px;overflow-y:auto;box-shadow:var(--shadow);display:none}
+.ac-list.open{display:block}
+.ac-item{padding:11px 14px;font-size:14px;cursor:pointer;border-bottom:1px solid var(--line);transition:.15s}
+.ac-item:last-child{border-bottom:0}
+.ac-item:hover,.ac-item.active{background:var(--surface2);color:var(--accent)}
+.ac-item small{display:block;font-size:11.5px;color:var(--muted);margin-top:2px}
+.ac-loading{padding:11px 14px;font-size:13px;color:var(--muted)}
+
+.extras-list{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+.extra-row{display:grid;grid-template-columns:1fr 110px 36px;gap:8px;align-items:center}
+.extra-row input{width:100%;background:var(--surface2);border:1px solid var(--line);color:var(--txt);border-radius:11px;padding:11px 12px;outline:none;transition:.2s;font-size:14px}
+.extra-row input:focus{border-color:var(--accent);background:var(--surface3)}
+.extra-row .extra-remove{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--surface2);color:var(--muted);cursor:pointer;display:grid;place-items:center;font-size:18px;line-height:1;transition:.2s}
+.extra-row .extra-remove:hover{background:rgba(239,68,68,.15);color:#ff9191;border-color:rgba(239,68,68,.3)}
+.preset-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.preset-btn{border:1px solid var(--line);background:var(--surface2);color:var(--muted);padding:7px 12px;border-radius:999px;font-size:12px;font-weight:600;cursor:pointer;transition:.2s}
+.preset-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.preset-btn:active{transform:scale(.96)}
+.preset-btn.active{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.extras-total{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:11px;background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.25);font-size:13px;margin-top:4px}
+.extras-total .lbl{color:var(--muted);font-weight:600}
+.extras-total .val{font-weight:700;color:#c084fc}
+
+.origin-toggle{display:flex;gap:6px;margin-bottom:6px}
+.origin-toggle .origin-btn{flex:1;background:var(--surface2);border:1px solid var(--line);color:var(--muted);padding:11px 8px;border-radius:11px;font-size:12.5px;font-weight:600;cursor:pointer;transition:.2s}
+.origin-toggle .origin-btn.active{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent)}
+.origin-toggle .origin-btn:active{transform:scale(.97)}
+
+.pstats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.pstat{background:var(--surface2);border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center}
+.pstat .n{font-size:22px;font-weight:800;letter-spacing:-.5px;line-height:1}
+.pstat .l{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);font-weight:700;margin-top:5px}
+.pstat.accent .n{color:var(--accent)}
+.pstat.amber .n{color:var(--amber)}
+
+.card.finished{border-left-color:var(--accent);opacity:.92}
+.card.finished .result-pills{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.result-pill{
+  display:inline-flex;align-items:center;gap:5px;
+  background:var(--accent-soft);border:1px solid var(--accent-line);
+  padding:5px 10px;border-radius:999px;font-size:12px;font-weight:700;
+  color:var(--accent);
+}
+.result-pill.amber{background:rgba(245,185,68,.12);border-color:rgba(245,185,68,.3);color:var(--amber)}
+
+.card-actions{display:flex;gap:8px;margin-top:10px}
+.card-actions .btn-sm{flex:1;padding:11px;font-size:13px;margin:0}
+
+.profile-sheet{position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .28s;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.profile-sheet.open{opacity:1;pointer-events:auto}
+.profile-card{width:100%;max-width:480px;background:var(--surface);border-top-left-radius:26px;border-top-right-radius:26px;border:1px solid var(--line);border-bottom:0;padding:26px 22px calc(28px + env(safe-area-inset-bottom));transform:translateY(30px);transition:transform .32s cubic-bezier(.32,.72,0,1);text-align:center;max-height:90vh;overflow-y:auto}
+.profile-sheet.open .profile-card{transform:translateY(0)}
+.profile-photo-wrap{position:relative;width:110px;height:110px;margin:0 auto 16px}
+.profile-photo{width:100%;height:100%;border-radius:50%;background:linear-gradient(145deg,var(--accent),var(--accent-dark));color:#06210f;display:grid;place-items:center;font-size:44px;font-weight:800;overflow:hidden;box-shadow:0 0 0 3px var(--surface), 0 0 0 4px var(--accent-line)}
+.profile-photo img{width:100%;height:100%;object-fit:cover;display:block}
+.photo-edit-btn{position:absolute;right:-2px;bottom:-2px;width:38px;height:38px;border-radius:50%;border:0;background:linear-gradient(145deg,var(--accent),var(--accent-dark));color:#06210f;display:grid;place-items:center;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.35), 0 0 0 3px var(--surface);transition:.2s}
+.photo-edit-btn:active{transform:scale(.9)}
+.photo-edit-btn svg{width:18px;height:18px}
+.profile-name{font-size:19px;font-weight:700;letter-spacing:-.3px;margin:0 0 4px}
+.profile-team{font-size:13px;color:var(--muted);margin:0 0 22px}
+.profile-section{text-align:left;margin:18px 0 0;padding-top:18px;border-top:1px solid var(--line)}
+.profile-section-title{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin:0 0 12px}
+.profile-actions{display:flex;flex-direction:column;gap:10px;margin-top:18px}
+.profile-actions .btn{margin:0}
+
+#toast{position:fixed;left:50%;bottom:calc(100px + env(safe-area-inset-bottom));transform:translate(-50%,20px);background:var(--surface3);color:var(--txt);border:1px solid var(--line);padding:12px 20px;border-radius:999px;font-size:13px;font-weight:600;opacity:0;pointer-events:none;transition:.28s;z-index:80;box-shadow:0 10px 30px rgba(0,0,0,.35);white-space:nowrap;backdrop-filter:blur(10px)}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+
+.gps-status{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);margin-top:-4px;margin-bottom:8px;min-height:18px}
+.gps-status svg{width:14px;height:14px;flex:0 0 auto}
+.gps-status.ok{color:var(--accent)}
+.gps-status.loading{color:var(--amber)}
+.gps-status.erro{color:var(--danger)}
+
+.modal{position:fixed;inset:0;z-index:150;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .25s;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.modal.open{opacity:1;pointer-events:auto}
+.modal-card{width:100%;max-width:400px;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:26px 22px;transform:scale(.95);transition:transform .25s}
+.modal.open .modal-card{transform:scale(1)}
+.modal-card h3{margin:0 0 10px;font-size:17px;font-weight:700;text-align:center}
+.modal-card .modal-sub{margin:0 0 18px;text-align:center;font-size:13px;line-height:1.6;color:var(--muted)}
+.modal-card .field{margin-bottom:12px}
+.row-modal{display:flex;gap:8px;margin-top:16px}
+.row-modal .btn{margin:0}
+</style>
+</head>
+<body>
+
+<div id="splash">
+  <div class="s-logo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/><path d="M12 7l3.5 2.5-1.3 4.1h-4.4L8.5 9.5z"/>
+      <path d="M12 2v3.5M22 12h-3.5M12 22v-3.5M2 12h3.5"/>
+    </svg>
+  </div>
+</div>
+
+<div id="login" style="display:none">
+  <div class="logo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/><path d="M12 7l3.5 2.5-1.3 4.1h-4.4L8.5 9.5z"/>
+      <path d="M12 2v3.5M22 12h-3.5M12 22v-3.5M2 12h3.5"/>
+    </svg>
+  </div>
+  <h1>Agenda do Jogador</h1>
+  <p class="sub">Acesso restrito</p>
+  <form id="login-form" autocomplete="off">
+    <div>
+      <label for="lg-user">Usuário</label>
+      <input id="lg-user" type="text" autocomplete="username" required>
+    </div>
+    <div>
+      <label for="lg-pass">Senha</label>
+      <input id="lg-pass" type="password" autocomplete="current-password" required>
+    </div>
+    <div class="erro" id="lg-erro"></div>
+    <button class="btn primary" type="submit">Entrar</button>
+  </form>
+  <button type="button" class="link-recovery" id="btn-forgot">🔑 Esqueci minha senha</button>
+</div>
+
+<div id="app" style="display:none">
+  <header class="topbar">
+    <div class="tb-info">
+      <h1 id="top-name">Agenda</h1>
+      <p id="top-sub">Carregando…</p>
+    </div>
+    <div class="tb-actions">
+      <button class="icon-btn" id="mode-toggle" aria-label="Alternar tema">
+        <svg id="mode-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></svg>
+      </button>
+      <div class="avatar" id="avatar-btn" title="Perfil">⚽</div>
+    </div>
+  </header>
+
+  <main id="view"></main>
+
+  <button class="fab hidden" id="fab" aria-label="Adicionar jogo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
+
+  <nav class="tabbar" id="tabbar"></nav>
+
+  <div class="sheet" id="sheet"></div>
+  <div class="picker" id="picker"></div>
+
+  <div class="profile-sheet" id="profile-sheet">
+    <div class="profile-card">
+      <div class="profile-photo-wrap">
+        <div class="profile-photo" id="profile-photo"></div>
+        <button class="photo-edit-btn" id="btn-photo-float" aria-label="Trocar foto">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+        </button>
+      </div>
+      <h3 class="profile-name" id="profile-name">Jogador</h3>
+      <p class="profile-team" id="profile-team">Jogador de várzea</p>
+      <button class="btn ghost btn-sm" id="btn-edit-name" style="margin: -12px auto 16px; display: block; width: max-content; padding: 6px 12px; font-size: 12px;">✏️ Editar nome</button>
+
+      <div class="profile-section">
+        <h4 class="profile-section-title">📊 Minhas estatísticas</h4>
+        <div class="pstats-grid">
+          <div class="pstat accent"><div class="n" id="stat-jogos">0</div><div class="l">Jogos</div></div>
+          <div class="pstat accent"><div class="n" id="stat-gols">0</div><div class="l">⚽ Gols</div></div>
+          <div class="pstat accent"><div class="n" id="stat-assists">0</div><div class="l">🎯 Assist.</div></div>
+          <div class="pstat"><div class="n" id="stat-media">0.0</div><div class="l">Gols/jogo</div></div>
+        </div>
+        <p class="muted small" style="margin:0;text-align:center">
+          <span id="stat-km" style="font-weight:600">0 km</span> rodados · 
+          <span id="stat-money" style="font-weight:600">R$ 0</span> recebidos
+        </p>
+      </div>
+
+      <div class="profile-section">
+        <h4 class="profile-section-title">📍 Minha cidade-base</h4>
+        <div class="ac-wrap">
+          <input id="profile-home-city" placeholder="Digite sua cidade" autocomplete="off"
+                 style="width:100%;background:var(--surface2);border:1px solid var(--line);color:var(--txt);border-radius:12px;padding:13px 14px;outline:none">
+          <div class="ac-list" id="ac-profile-home"></div>
+        </div>
+        <p class="muted small" id="profile-home-status" style="margin:8px 0 0;text-align:left">
+          Usada pra calcular a distância até o jogo.
+        </p>
+        <button class="btn ghost btn-sm" id="btn-profile-gps">📍 Usar minha localização atual</button>
+        <button class="btn primary btn-sm" id="btn-save-home-city">Salvar cidade-base</button>
+      </div>
+
+      <div class="profile-actions">
+        <button class="btn primary" id="btn-photo-change">📷 Trocar foto</button>
+        <button class="btn danger" id="btn-photo-remove" style="display:none">Remover foto</button>
+        <button class="btn" id="btn-change-pass">🔑 Alterar senha</button>
+        <button class="btn ghost" id="btn-logout">Sair da conta</button>
+      </div>
+    </div>
+  </div>
+
+  <input type="file" id="photo-input-global" accept="image/*" hidden>
+  <div id="toast"></div>
+</div>
+
+<div class="modal" id="modal-forgot">
+  <div class="modal-card">
+    <h3>🔑 Recuperar senha</h3>
+    <p class="modal-sub">
+      Em breve você poderá recuperar sua senha por e-mail, direto por aqui.<br><br>
+      Por enquanto, entre em contato com o administrador da sua agenda para receber uma nova senha.<br><br>
+      Se você ainda lembra da sua senha atual, entre normalmente e use o botão <b>🔑 Alterar senha</b> dentro do seu perfil.
+    </p>
+    <div class="row-modal">
+      <button type="button" class="btn ghost" id="btn-close-forgot">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal-changepass">
+  <div class="modal-card">
+    <h3>🔑 Alterar senha</h3>
+    <p class="modal-sub">Escolha uma nova senha com pelo menos 6 caracteres.</p>
+    <label class="field"><span>Senha atual</span>
+      <input type="password" id="cp-current" autocomplete="current-password">
+    </label>
+    <label class="field"><span>Nova senha</span>
+      <input type="password" id="cp-new" autocomplete="new-password">
+    </label>
+    <label class="field"><span>Confirmar nova senha</span>
+      <input type="password" id="cp-confirm" autocomplete="new-password">
+    </label>
+    <div class="row-modal">
+      <button type="button" class="btn ghost" id="btn-close-cp">Cancelar</button>
+      <button type="button" class="btn primary" id="btn-save-cp">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================ CONSTANTES ================ */
+const LS_KEY = 'agenda_jogador_v1';
+const SS_KEY = 'agenda_jogador_sessao';
+/* ================ SUPABASE ================ */
+const SUPABASE_URL = 'https://dbmkrtrorpdnjfmiiflb.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRibWtydHJvcnBkbmpmbWlpZmxiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1OTYzMTAsImV4cCI6MjEwNzE3MjMxMH0.yjqg-HUrdOK7aKHYOcHJsNqxoEhOlqsL-qaX-zyBFvM';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+let _saveTimer = null;
+async function salvarEstadoRemoto(){
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(async () => {
+    try{
+      const { data:{ user } } = await sb.auth.getUser();
+      if(!user) return;
+      await sb.from('user_states').upsert({
+        user_id: user.id,
+        data:    state,
+        updated_at: new Date().toISOString()
+      });
+    }catch(e){ console.warn('Falha ao salvar no servidor', e); }
+  }, 500);
+}
+
+async function carregarEstadoRemoto(){
+  const { data:{ user } } = await sb.auth.getUser();
+  if(!user) return null;
+  const { data, error } = await sb
+    .from('user_states')
+    .select('data')
+    .eq('user_id', user.id)
+    .maybeSingle();
+  if(error){ console.warn(error); return null; }
+  return data?.data || null;
+}
+
+const MONTHS      = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+const MONTHS_FULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const WEEKDAYS    = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+const WEEKDAYS_LONG = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
+
+const THEMES = [
+  { id:'verde',   label:'Verde',   main:'#22c55e', dark:'#16a34a' },
+  { id:'azul',    label:'Azul',    main:'#3b82f6', dark:'#2563eb' },
+  { id:'roxo',    label:'Roxo',    main:'#a855f7', dark:'#9333ea' },
+  { id:'laranja', label:'Laranja', main:'#f97316', dark:'#ea580c' },
+  { id:'rosa',    label:'Rosa',    main:'#ec4899', dark:'#db2777' },
+  { id:'vermelho',label:'Vermelho',main:'#ef4444', dark:'#dc2626' }
+];
+
+const ICONS = {
+  calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>',
+  chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 4 4 5-7"/></svg>',
+  gear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h.1a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v.1a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
+  sun: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>',
+  moon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>',
+  clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
+  chev: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>',
+  chevL: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>',
+  route: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="3"/><circle cx="18" cy="5" r="3"/><path d="M9 19h5a4 4 0 0 0 4-4V8"/></svg>',
+  ball: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 7l3.5 2.5-1.3 4.1h-4.4L8.5 9.5z"/><path d="M12 2v3.5M22 12h-3.5M12 22v-3.5M2 12h3.5"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>',
+  trophy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>'
+};
+
+const DEFAULT_STATE = {
+  settings: {
+    playerName: 'Jogador',
+    teamName:   '',
+    playerPhoto: '',
+    theme: 'verde',
+    themeMode: 'dark',
+    defaultFee: 150,
+    pricePerKm: 2.5,
+    homeCity: '',
+    homeCoords: null,
+    cities: [],
+    teams: []
+  },
+  games: []
+};
+
+/* ================ ESTADO ================ */
+let state  = carregarEstado();
+let sessao = carregarSessao();
+let tab    = 'agenda';
+let formEditId = null;
+let histFrom = '';
+let histTo = '';
+
+function carregarEstado(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if(!raw) return JSON.parse(JSON.stringify(DEFAULT_STATE));
+    const p = JSON.parse(raw);
+    return {
+      settings: Object.assign({}, DEFAULT_STATE.settings, p.settings||{}),
+      games: Array.isArray(p.games) ? p.games : []
+    };
+  }catch(e){ return JSON.parse(JSON.stringify(DEFAULT_STATE)); }
+}
+function salvarEstado(){
+  try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){}
+  salvarEstadoRemoto();
+}
+function carregarSessao(){
+  try{ const r = sessionStorage.getItem(SS_KEY); return r ? JSON.parse(r) : null; }
+  catch(e){ return null; }
+}
+function salvarSessao(s){
+  if(s) sessionStorage.setItem(SS_KEY, JSON.stringify(s));
+  else  sessionStorage.removeItem(SS_KEY);
+}
+
+/* ================ HELPERS ================ */
+const num   = v => { const n = parseFloat(v); return isNaN(n) ? 0 : n; };
+const money = v => num(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const esc   = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid   = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+
+function parseISO(iso){ const [y,m,d]=iso.split('-').map(Number); return new Date(y,m-1,d); }
+function hojeISO(){
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function mesLabel(key){ const [y,m]=key.split('-').map(Number); return `${MONTHS_FULL[m-1]} ${y}`; }
+function fmtDataLonga(iso){
+  if(!iso) return null;
+  const [y,m,d]=iso.split('-').map(Number);
+  const dt = new Date(y, m-1, d);
+  return `${WEEKDAYS_LONG[dt.getDay()]}, ${d} de ${MONTHS_FULL[m-1]}`;
+}
+
+const extrasTotalOf    = g => (g.extras||[]).reduce((s,e) => s + num(e.value), 0);
+const extrasReceivedOf = g => g.extrasReceived ? extrasTotalOf(g) : 0;
+const extrasPendingOf  = g => g.extrasReceived ? 0 : extrasTotalOf(g);
+
+const isFinished = g => g.finished === true;
+const fuelOf     = g => num(g.km) * num(g.pricePerKm);
+const pendingOf  = g => (g.feeReceived?0:num(g.fee))
+                     + ((g.fuelReceived||num(g.km)===0)?0:fuelOf(g))
+                     + extrasPendingOf(g);
+const receivedOf = g => (g.feeReceived?num(g.fee):0)
+                     + (g.fuelReceived?fuelOf(g):0)
+                     + extrasReceivedOf(g);
+
+function jogosOrdenados(){
+  return [...state.games].sort((a,b) =>
+    String(a.date||'9999').localeCompare(String(b.date||'9999')) ||
+    String(a.time||'').localeCompare(String(b.time||''))
+  );
+}
+
+let toastTimer;
+function toast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3200);
+}
+
+/* ================ TEMA + MODO ================ */
+function aplicarTema(id){
+  const t = THEMES.find(x => x.id === id) || THEMES[0];
+  const r = document.documentElement.style;
+  r.setProperty('--accent',      t.main);
+  r.setProperty('--accent-dark', t.dark);
+  r.setProperty('--accent-soft', hexToRgba(t.main, .14));
+  r.setProperty('--accent-line', hexToRgba(t.main, .28));
+  r.setProperty('--bg-grad-1',   hexToRgba(t.main, .10));
+}
+function aplicarModo(mode){
+  document.body.classList.toggle('light', mode === 'light');
+  const ic = document.getElementById('mode-icon');
+  if(ic) ic.outerHTML =
+    `<svg id="mode-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      ${mode === 'light' ? '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>' : '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>'}
+    </svg>`;
+  document.querySelector('meta[name="theme-color"]')
+    ?.setAttribute('content', mode === 'light' ? '#f3f6fb' : '#0a0e1a');
+}
+function hexToRgba(hex, a){
+  const h = hex.replace('#','');
+  const r = parseInt(h.substring(0,2),16);
+  const g = parseInt(h.substring(2,4),16);
+  const b = parseInt(h.substring(4,6),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+/* ================ GEOLOCALIZAÇÃO ================ */
+function obterLocalizacaoAtual(){
+  return new Promise((resolve, reject) => {
+    if(!navigator.geolocation){
+      reject(new Error('Geolocalização não disponível neste navegador'));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      pos => resolve({
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+        accuracy: pos.coords.accuracy
+      }),
+      err => {
+        let msg = 'Não foi possível obter a localização';
+        if(err.code === 1) msg = 'Permissão negada para acessar localização';
+        else if(err.code === 2) msg = 'Localização indisponível';
+        else if(err.code === 3) msg = 'Tempo esgotado para pegar localização';
+        reject(new Error(msg));
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
+    );
+  });
+}
+
+/* ================ HISTÓRICO POR PERÍODO ================ */
+function rangeDates(r){
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth();
+  if(r === 'all') return ['', ''];
+  if(r === 'this-month'){
+    return [
+      `${y}-${String(m+1).padStart(2,'0')}-01`,
+      `${y}-${String(m+1).padStart(2,'0')}-${String(new Date(y, m+1, 0).getDate()).padStart(2,'0')}`
+    ];
+  }
+  if(r === 'last-month'){
+    const lm = m === 0 ? 11 : m-1;
+    const ly = m === 0 ? y-1 : y;
+    return [
+      `${ly}-${String(lm+1).padStart(2,'0')}-01`,
+      `${ly}-${String(lm+1).padStart(2,'0')}-${String(new Date(ly, lm+1, 0).getDate()).padStart(2,'0')}`
+    ];
+  }
+  if(r === 'year'){
+    return [`${y}-01-01`, `${y}-12-31`];
+  }
+  return ['', ''];
+}
+
+function setHistRange(from, to){
+  histFrom = from || '';
+  histTo   = to   || '';
+  const fromEl = document.getElementById('hist-from');
+  const toEl   = document.getElementById('hist-to');
+  if(fromEl) fromEl.value = histFrom;
+  if(toEl)   toEl.value   = histTo;
+  renderHistContent();
+  document.querySelectorAll('[data-act="hist-quick"]').forEach(c => {
+    const [f, t] = rangeDates(c.dataset.range);
+    c.classList.toggle('active', f === histFrom && t === histTo);
+  });
+}
+
+function renderHistContent(){
+  const el = document.getElementById('hist-content');
+  if(!el) return;
+
+  const from = histFrom || '0000-00-00';
+  const to   = histTo   || '9999-99-99';
+
+  const filtered = state.games.filter(g => {
+    if(!g.date) return false;
+    return g.date >= from && g.date <= to;
+  });
+
+  const totalKm = filtered.reduce((s,g) => s + num(g.km), 0);
+  const received = filtered.reduce((s,g) => s + receivedOf(g), 0);
+  const pending  = filtered.reduce((s,g) => s + pendingOf(g), 0);
+  const count    = filtered.length;
+
+  let html = `
+    <div class="stats" style="grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+      <div class="stat">
+        <div class="lbl">🛣️ Km rodados</div>
+        <div class="val">${totalKm.toFixed(1).replace('.',',')} km</div>
+      </div>
+      <div class="stat">
+        <div class="lbl">⚽ Jogos</div>
+        <div class="val">${count}</div>
+      </div>
+      <div class="stat">
+        <div class="lbl">💰 Recebido</div>
+        <div class="val">${money(received)}</div>
+      </div>
+      <div class="stat amber">
+        <div class="lbl">⏳ A receber</div>
+        <div class="val">${money(pending)}</div>
+      </div>
+    </div>
+  `;
+
+  if(!filtered.length){
+    html += `<p class="muted small" style="text-align:center;padding:14px 0">Nenhum jogo no período selecionado.</p>`;
+    el.innerHTML = html;
+    return;
+  }
+
+  const meses = new Map();
+  filtered.forEach(g => {
+    const k = g.date.slice(0,7);
+    if(!meses.has(k)) meses.set(k, { count:0, km:0, received:0, pending:0 });
+    const m = meses.get(k);
+    m.count++;
+    m.km       += num(g.km);
+    m.received += receivedOf(g);
+    m.pending  += pendingOf(g);
+  });
+
+  html += `<div style="border-top:1px solid var(--line);margin-top:4px"></div>`;
+  [...meses.entries()].sort((a,b) => b[0].localeCompare(a[0])).forEach(([k, m]) => {
+    html += `
+      <div class="month-row">
+        <div>
+          <div class="m-name">${mesLabel(k)}</div>
+          <div class="m-sub">${m.count} jogo${m.count===1?'':'s'} · ${m.km.toFixed(1).replace('.',',')} km</div>
+        </div>
+        <div class="m-val">${money(m.received)}<small>${money(m.pending)} a receber</small></div>
+      </div>`;
+  });
+
+  el.innerHTML = html;
+}
+
+function setupHistorico(){
+  const fromEl = document.getElementById('hist-from');
+  const toEl   = document.getElementById('hist-to');
+  if(fromEl) fromEl.oninput = e => { histFrom = e.target.value; renderHistContent(); };
+  if(toEl)   toEl.oninput   = e => { histTo   = e.target.value; renderHistContent(); };
+  renderHistContent();
+}
+
+/* ================ AVATAR ================ */
+function renderAvatar(){
+  const btn = document.getElementById('avatar-btn');
+  const photo = state.settings.playerPhoto;
+  if(photo){
+    btn.innerHTML = `<img src="${photo}" alt="perfil">`;
+  } else {
+    const inicial = (state.settings.playerName || 'J').trim().charAt(0).toUpperCase();
+    btn.textContent = inicial;
+  }
+}
+function processarImagem(file){
+  return new Promise((resolve, reject) => {
+    if(!file || !file.type.startsWith('image/')){ reject('Não é uma imagem'); return; }
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 240;
+        let { width:w, height:h } = img;
+        if(w > h){ if(w > MAX){ h = h * MAX / w; w = MAX; } }
+        else     { if(h > MAX){ w = w * MAX / h; h = MAX; } }
+        const c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        c.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(c.toDataURL('image/jpeg', 0.82));
+      };
+      img.onerror = () => reject('Erro ao carregar');
+      img.src = e.target.result;
+    };
+    reader.onerror = () => reject('Erro ao ler');
+    reader.readAsDataURL(file);
+  });
+}
+
+/* ================ API - CIDADES E ROTAS ================ */
+async function buscarCidades(q, sinal){
+  try{
+    const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=6`;
+    const r = await fetch(url, { signal: sinal });
+    if(!r.ok) throw new Error('Photon HTTP ' + r.status);
+    const d = await r.json();
+    const res = (d.features || []).map(f => {
+      const p = f.properties || {};
+      const principal = p.name || p.city || '';
+      const sub = [p.city && p.city !== principal ? p.city : '', p.state, p.country]
+                    .filter(Boolean).join(' · ');
+      return {
+        nome: principal, sub: sub,
+        lat: f.geometry.coordinates[1],
+        lng: f.geometry.coordinates[0]
+      };
+    });
+    if(res.length) return res;
+    throw new Error('Photon sem resultados');
+  }catch(err){
+    if(err.name === 'AbortError') throw err;
+    console.warn('Photon falhou, tentando Nominatim…', err);
+  }
+  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=6&addressdetails=1&accept-language=pt-BR`;
+  const r = await fetch(url, { signal: sinal });
+  if(!r.ok) throw new Error('Nominatim HTTP ' + r.status);
+  const d = await r.json();
+  return d.map(item => {
+    const nome = item.name || (item.display_name || '').split(',')[0];
+    const sub  = (item.display_name || '').split(',').slice(1, 3).join(' · ').trim();
+    return {
+      nome: nome, sub: sub,
+      lat: parseFloat(item.lat), lng: parseFloat(item.lon)
+    };
+  });
+}
+async function geocodificar(q){
+  const lista = await buscarCidades(q);
+  return lista[0] || null;
+}
+async function calcularRota(a, b){
+  const url = `https://router.project-osrm.org/route/v1/driving/${a.lng},${a.lat};${b.lng},${b.lat}?overview=false`;
+  const r = await fetch(url);
+  if(!r.ok) throw new Error('Falha na rota');
+  const d = await r.json();
+  if(d.code !== 'Ok' || !d.routes || !d.routes[0]) throw new Error('Sem rota');
+  return d.routes[0].distance / 1000;
+}
+
+/* ================ LOGIN ================ */
+document.getElementById('login-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const u = document.getElementById('lg-user').value.trim().toLowerCase();
+  const p = document.getElementById('lg-pass').value;
+  const erro = document.getElementById('lg-erro');
+  erro.textContent = 'Entrando…';
+  document.getElementById('lg-pass').value = '';
+
+  const email = `${u}@agenda.app`;
+
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: p });
+
+  if(error){
+    erro.textContent = 'Usuário ou senha incorretos.';
+    return;
+  }
+
+  const remoto = await carregarEstadoRemoto();
+  if(remoto && typeof remoto === 'object'){
+    state = {
+      settings: Object.assign({}, DEFAULT_STATE.settings, remoto.settings||{}),
+      games: Array.isArray(remoto.games) ? remoto.games : []
+    };
+  } else {
+    state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+    await salvarEstadoRemoto();
+  }
+
+  const perfil = (u === 'admin') ? 'admin' : 'player';
+  sessao = { perfil, nome: state.settings.playerName || (perfil==='admin'?'Admin':'Jogador') };
+  salvarSessao(sessao);
+  entrarApp();
+});
+
+document.getElementById('mode-toggle').addEventListener('click', () => {
+  state.settings.themeMode = state.settings.themeMode === 'light' ? 'dark' : 'light';
+  salvarEstado();
+  aplicarModo(state.settings.themeMode);
+});
+
+/* ================ MODAIS ================ */
+function abrirModal(id){
+  document.getElementById(id).classList.add('open');
+  document.body.classList.add('locked');
+}
+function fecharModal(id){
+  document.getElementById(id).classList.remove('open');
+  document.body.classList.remove('locked');
+}
+document.querySelectorAll('.modal').forEach(m => {
+  m.addEventListener('click', e => {
+    if(e.target === m) fecharModal(m.id);
+  });
+});
+
+document.getElementById('btn-forgot').addEventListener('click', () => abrirModal('modal-forgot'));
+document.getElementById('btn-close-forgot').addEventListener('click', () => fecharModal('modal-forgot'));
+
+document.getElementById('btn-change-pass').addEventListener('click', () => {
+  document.getElementById('cp-current').value = '';
+  document.getElementById('cp-new').value = '';
+  document.getElementById('cp-confirm').value = '';
+  abrirModal('modal-changepass');
+});
+document.getElementById('btn-close-cp').addEventListener('click', () => fecharModal('modal-changepass'));
+
+document.getElementById('btn-save-cp').addEventListener('click', async () => {
+  const cur     = document.getElementById('cp-current').value;
+  const newPass = document.getElementById('cp-new').value;
+  const confirm = document.getElementById('cp-confirm').value;
+
+  if(!cur || !newPass || !confirm){ toast('Preencha todos os campos'); return; }
+  if(newPass.length < 6){ toast('A nova senha precisa ter no mínimo 6 caracteres'); return; }
+  if(newPass !== confirm){ toast('As senhas não coincidem'); return; }
+  if(newPass === cur){ toast('A nova senha precisa ser diferente da atual'); return; }
+
+  const btn = document.getElementById('btn-save-cp');
+  btn.textContent = 'Salvando…';
+  btn.disabled = true;
+
+  const { data:{ user } } = await sb.auth.getUser();
+  if(!user){
+    btn.textContent = 'Salvar'; btn.disabled = false;
+    toast('Sessão expirada. Faça login de novo.'); return;
+  }
+
+  const { error: signErr } = await sb.auth.signInWithPassword({
+    email: user.email,
+    password: cur
+  });
+
+  if(signErr){
+    btn.textContent = 'Salvar'; btn.disabled = false;
+    toast('Senha atual incorreta');
+    return;
+  }
+
+  const { error } = await sb.auth.updateUser({ password: newPass });
+
+  btn.textContent = 'Salvar'; btn.disabled = false;
+
+  if(error){
+    toast('Erro: ' + (error.message || 'falha ao alterar'));
+    return;
+  }
+
+  toast('Senha alterada com sucesso ✅');
+  fecharModal('modal-changepass');
+});
+
+/* ================ PERFIL (sheet) ================ */
+document.getElementById('avatar-btn').addEventListener('click', abrirPerfil);
+
+function abrirPerfil(){
+  renderPerfilSheet();
+  document.getElementById('profile-sheet').classList.add('open');
+  document.body.classList.add('locked');
+  setupProfileHomeAutocomplete();
+}
+function fecharPerfil(){
+  document.getElementById('profile-sheet').classList.remove('open');
+  document.body.classList.remove('locked');
+}
+function renderPerfilSheet(){
+  const fotoEl = document.getElementById('profile-photo');
+  const photo  = state.settings.playerPhoto;
+  if(photo) fotoEl.innerHTML = `<img src="${photo}" alt="">`;
+  else      fotoEl.textContent = (state.settings.playerName || 'J').trim().charAt(0).toUpperCase();
+  document.getElementById('profile-name').textContent = state.settings.playerName || 'Jogador';
+  document.getElementById('profile-team').textContent = state.settings.teamName || 'Jogador de várzea';
+  document.getElementById('btn-photo-remove').style.display = photo ? 'block' : 'none';
+
+  const inpHome = document.getElementById('profile-home-city');
+  if(inpHome && document.activeElement !== inpHome) inpHome.value = state.settings.homeCity || '';
+
+  const statusEl = document.getElementById('profile-home-status');
+  if(statusEl){
+    statusEl.innerHTML = state.settings.homeCoords
+      ? `📍 Coordenadas salvas${state.settings.homeCity ? ` (${esc(state.settings.homeCity)})` : ''}`
+      : `⚠️ Ainda sem coordenadas — configure para calcular km automaticamente.`;
+  }
+
+  // Estatísticas
+  const finished = state.games.filter(g => isFinished(g));
+  const totalGoals   = finished.reduce((s,g) => s + num(g.goals), 0);
+  const totalAssists = finished.reduce((s,g) => s + num(g.assists), 0);
+  const totalKm      = finished.reduce((s,g) => s + num(g.km), 0);
+  const totalMoney   = finished.reduce((s,g) => s + receivedOf(g), 0);
+  const mediaGols    = finished.length ? (totalGoals / finished.length) : 0;
+
+  const elJogos   = document.getElementById('stat-jogos');
+  const elGols    = document.getElementById('stat-gols');
+  const elAssists = document.getElementById('stat-assists');
+  const elMedia   = document.getElementById('stat-media');
+  const elKm      = document.getElementById('stat-km');
+  const elMoney   = document.getElementById('stat-money');
+
+  if(elJogos)   elJogos.textContent   = finished.length;
+  if(elGols)    elGols.textContent    = totalGoals;
+  if(elAssists) elAssists.textContent = totalAssists;
+  if(elMedia)   elMedia.textContent   = mediaGols.toFixed(1).replace('.',',');
+  if(elKm)      elKm.textContent      = totalKm.toFixed(1).replace('.',',') + ' km';
+  if(elMoney)   elMoney.textContent   = money(totalMoney);
+}
+const btnEdit = document.getElementById('btn-edit-name');
+if(btnEdit) btnEdit.addEventListener('click', () => {
+  const atual = state.settings.playerName || 'Jogador';
+  const novo = prompt('Qual é o seu nome?', atual);
+  if(novo !== null && novo.trim() !== ''){
+    state.settings.playerName = novo.trim();
+    sessao.nome = state.settings.playerName;
+    salvarSessao(sessao);
+    salvarEstado();
+    renderAvatar();
+    renderPerfilSheet();
+    render(); // Atualiza o nome no topo da tela também
+    toast('Nome atualizado ✅');
+  }
+}); 
+
+document.getElementById('profile-sheet').addEventListener('click', e => {
+  if(e.target.id === 'profile-sheet') fecharPerfil();
+});
+document.getElementById('btn-photo-float').addEventListener('click', () => {
+  document.getElementById('photo-input-global').click();
+});
+document.getElementById('btn-photo-change').addEventListener('click', () => {
+  document.getElementById('photo-input-global').click();
+});
+document.getElementById('btn-photo-remove').addEventListener('click', () => {
+  if(!confirm('Remover a foto do perfil?')) return;
+  state.settings.playerPhoto = '';
+  salvarEstado(); renderAvatar(); renderPerfilSheet();
+  toast('Foto removida');
+});
+document.getElementById('btn-logout').addEventListener('click', async () => {
+  if(!confirm('Sair da conta?')) return;
+  fecharPerfil();
+  await sb.auth.signOut();
+  sessao = null; salvarSessao(null);
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login').style.display = 'flex';
+  document.getElementById('lg-user').value = '';
+  document.getElementById('lg-pass').value = '';
+});
+
+/* ---- Cidade-base no perfil ---- */
+document.getElementById('btn-profile-gps').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-profile-gps');
+  btn.textContent = '📡 Obtendo localização…';
+  btn.disabled = true;
+  try{
+    const coords = await obterLocalizacaoAtual();
+    state.settings.homeCoords = { lat: coords.lat, lng: coords.lng };
+    if(!state.settings.homeCity) state.settings.homeCity = 'Minha localização atual';
+    salvarEstado();
+    const inp = document.getElementById('profile-home-city');
+    if(inp) inp.value = state.settings.homeCity;
+    toast('📍 Localização capturada');
+    renderPerfilSheet();
+  }catch(err){
+    toast(err.message || 'Não foi possível obter localização');
+  }finally{
+    btn.textContent = '📍 Usar minha localização atual';
+    btn.disabled = false;
+  }
+});
+
+document.getElementById('btn-save-home-city').addEventListener('click', async () => {
+  const inp = document.getElementById('profile-home-city');
+  const v = (inp?.value || '').trim();
+  if(!v){ toast('Digite uma cidade'); return; }
+
+  state.settings.homeCity = v;
+
+  if(!state.settings.homeCoords){
+    const btn = document.getElementById('btn-save-home-city');
+    btn.textContent = 'Buscando coordenadas…';
+    btn.disabled = true;
+    try{
+      const r = await geocodificar(v);
+      if(r) state.settings.homeCoords = { lat: r.lat, lng: r.lng };
+    }catch(e){}
+    btn.textContent = 'Salvar cidade-base';
+    btn.disabled = false;
+  }
+
+  salvarEstado();
+  toast('Cidade-base salva ✅');
+  renderPerfilSheet();
+});
+
+function setupProfileHomeAutocomplete(){
+  const inp = document.getElementById('profile-home-city');
+  const list = document.getElementById('ac-profile-home');
+  if(!inp || !list || inp.dataset.acSetup) return;
+  inp.dataset.acSetup = '1';
+  setupAutocomplete(inp, list, r => {
+    inp.value = r.nome + (r.sub ? ' - ' + r.sub.split(' · ').slice(0,2).join(', ') : '');
+    state.settings.homeCoords = { lat: r.lat, lng: r.lng };
+    state.settings.homeCity = inp.value;
+    salvarEstado();
+  });
+}
+
+/* ================ APP SHELL ================ */
+function entrarApp(){
+  document.getElementById('login').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  aplicarTema(state.settings.theme);
+  aplicarModo(state.settings.themeMode);
+  renderAvatar();
+  tab = sessao.perfil === 'admin' ? 'admin' : 'agenda';
+  renderTabbar();
+  render();
+}
+
+function renderTabbar(){
+  const tabs = sessao.perfil === 'admin'
+    ? [{ id:'admin', ico:ICONS.gear, label:'Admin' }]
+    : [{ id:'agenda',     ico:ICONS.calendar, label:'Agenda' },
+       { id:'concluidos', ico:ICONS.check,    label:'Concluídos' },
+       { id:'resumo',     ico:ICONS.chart,    label:'Resumo' }];
+  document.getElementById('tabbar').innerHTML = tabs.map(t =>
+    `<button class="nav-btn" data-tab="${t.id}">${t.ico}<span>${t.label}</span></button>`
+  ).join('');
+}
+
+function render(){
+  document.querySelectorAll('.nav-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.tab === tab)
+  );
+  document.getElementById('fab').classList.toggle('hidden', tab !== 'agenda');
+
+  document.getElementById('top-name').textContent = sessao.nome || 'Agenda';
+  document.getElementById('top-sub').textContent =
+    tab === 'agenda' ? (state.settings.teamName || 'Agenda de jogos')
+    : tab === 'resumo' ? 'Resumo financeiro'
+    : 'Gerenciar aplicação';
+
+  renderAvatar();
+
+  const v = document.getElementById('view');
+  v.style.animation = 'none'; v.offsetHeight; v.style.animation = '';
+  if(tab === 'agenda')          v.innerHTML = viewAgenda();
+  else if(tab === 'concluidos') v.innerHTML = viewConcluidos();
+  else if(tab === 'resumo'){ v.innerHTML = viewResumo(); setupHistorico(); }
+  else                          v.innerHTML = viewAdmin();
+}
+
+/* ================ ABA AGENDA ================ */
+function viewAgenda(){
+  const jogos = jogosOrdenados().filter(g => !isFinished(g));
+  const lista = jogos;
+  const totalPend = jogos.reduce((s,g) => s + (num(g.fee) + fuelOf(g) + extrasTotalOf(g)), 0);
+  const emAberto  = jogos.length;
+
+  let html = `
+    <div class="strip">
+      <div>
+        <span class="strip-label">Total previsto</span>
+        <strong>${money(totalPend)}</strong>
+      </div>
+      <div class="strip-right">${emAberto} jogo${emAberto===1?'':'s'}<br>em aberto</div>
+    </div>
+  `;
+
+  if(!lista.length){
+    html += `
+      <div class="empty">
+        ${ICONS.ball}
+        <p>Nenhum jogo na agenda ainda.</p>
+        <p class="muted">Toque no botão <strong>+</strong> para adicionar o primeiro.</p>
+      </div>`;
+    return html;
+  }
+
+  const grupos = new Map();
+  lista.forEach(g => {
+    const k = g.date ? g.date.slice(0,7) : 'sem';
+    if(!grupos.has(k)) grupos.set(k, []);
+    grupos.get(k).push(g);
+  });
+
+  for(const [k, items] of grupos){
+    html += `<div class="group-title">${k === 'sem' ? 'Sem data' : mesLabel(k)}</div>`;
+    html += items.map(cardHTML).join('');
+  }
+  return html;
+}
+
+function cardHTML(g){
+  const d    = g.date ? parseISO(g.date) : null;
+  const sub  = [g.opponent, g.time, d ? WEEKDAYS[d.getDay()] : '', g.km ? `${num(g.km)} km` : '']
+                 .filter(Boolean).join(' · ');
+
+  return `
+  <article class="card">
+    <div class="card-main" data-act="edit" data-id="${g.id}">
+      <div class="date-badge">
+        <span class="dd">${d ? String(d.getDate()).padStart(2,'0') : '--'}</span>
+        <span class="mm">${d ? MONTHS[d.getMonth()] : ''}</span>
+      </div>
+      <div class="card-body">
+        <div class="card-title">${esc(g.city || 'Cidade não informada')}</div>
+        <div class="card-sub">${esc(sub) || 'Toque para editar'}</div>
+      </div>
+    </div>
+    <div class="pills">
+      <span class="pill">
+        <span class="dot"></span>Jogo ${money(g.fee)}
+      </span>
+      <span class="pill">
+        <span class="dot"></span>Gasolina ${money(fuelOf(g))}
+      </span>
+    </div>
+    <div class="card-actions">
+      <button class="btn primary btn-sm" data-act="finish-game" data-id="${g.id}">
+        Encerrar jogo
+      </button>
+    </div>
+  </article>`;
+}
+
+/* ================ ABA CONCLUÍDOS ================ */
+function viewConcluidos(){
+  const todos = jogosOrdenados().filter(g => isFinished(g)).reverse();
+
+  if(!todos.length){
+    return `
+      <div class="empty">
+        ${ICONS.check}
+        <p>Nenhum jogo encerrado ainda.</p>
+        <p class="muted">Encerre um jogo na aba <b>Agenda</b> pra vê-lo aqui.</p>
+      </div>`;
+  }
+
+  const totalGols     = todos.reduce((s,g) => s + num(g.goals), 0);
+  const totalAssists  = todos.reduce((s,g) => s + num(g.assists), 0);
+  const totalRecebido = todos.reduce((s,g) => s + receivedOf(g), 0);
+  const totalKm       = todos.reduce((s,g) => s + num(g.km), 0);
+
+  let html = `
+    <div class="stats">
+      <div class="stat highlight">
+        <div class="lbl">⚽ Gols marcados</div>
+        <div class="val">${totalGols}</div>
+      </div>
+      <div class="stat purple">
+        <div class="lbl">🎯 Assistências</div>
+        <div class="val">${totalAssists}</div>
+      </div>
+      <div class="stat amber">
+        <div class="lbl">🛣️ Km rodados</div>
+        <div class="val">${totalKm.toFixed(1).replace('.',',')} km</div>
+      </div>
+      <div class="stat">
+        <div class="lbl">💰 Total recebido</div>
+        <div class="val">${money(totalRecebido)}</div>
+      </div>
+      <div class="stat" style="grid-column:1/-1">
+        <div class="lbl">Jogos encerrados</div>
+        <div class="val">${todos.length}</div>
+      </div>
+    </div>
+  `;
+
+  const grupos = new Map();
+  todos.forEach(g => {
+    const k = g.date ? g.date.slice(0,7) : 'sem';
+    if(!grupos.has(k)) grupos.set(k, []);
+    grupos.get(k).push(g);
+  });
+
+  for(const [k, items] of grupos){
+    html += `<div class="group-title">${k === 'sem' ? 'Sem data' : mesLabel(k)}</div>`;
+    html += items.map(cardConcluidoHTML).join('');
+  }
+  return html;
+}
+
+function cardConcluidoHTML(g){
+  const d = g.date ? parseISO(g.date) : null;
+  const sub = [g.opponent, g.time, d ? WEEKDAYS[d.getDay()] : '', g.km ? `${num(g.km)} km` : '']
+    .filter(Boolean).join(' · ');
+
+  const gols    = num(g.goals);
+  const assists = num(g.assists);
+  const recebido = receivedOf(g);
+
+  return `
+  <article class="card finished">
+    <div class="card-main" data-act="edit-finished" data-id="${g.id}">
+      <div class="date-badge">
+        <span class="dd">${d ? String(d.getDate()).padStart(2,'0') : '--'}</span>
+        <span class="mm">${d ? MONTHS[d.getMonth()] : ''}</span>
+      </div>
+      <div class="card-body">
+        <div class="card-title">${esc(g.city || 'Cidade não informada')}</div>
+        <div class="card-sub">${esc(sub) || 'Toque para ver detalhes'}</div>
+      </div>
+    </div>
+    <div class="result-pills">
+      ${gols > 0 ? `<span class="result-pill">⚽ ${gols} gol${gols===1?'':'s'}</span>` : ''}
+      ${assists > 0 ? `<span class="result-pill">🎯 ${assists} assist.</span>` : ''}
+      ${recebido > 0 ? `<span class="result-pill amber">💰 ${money(recebido)}</span>` : ''}
+      ${gols === 0 && assists === 0 && recebido === 0 ? `<span class="result-pill" style="background:var(--surface2);border-color:var(--line);color:var(--muted)">Sem registros</span>` : ''}
+    </div>
+  </article>`;
+}
+
+/* ================ ABA RESUMO ================ */
+function viewResumo(){
+  const jogos = jogosOrdenados();
+  if(!jogos.length){
+    return `<div class="empty">${ICONS.chart}
+      <p>Sem dados ainda.</p>
+      <p class="muted">Adicione jogos na aba Agenda.</p></div>`;
+  }
+  const totalFee    = jogos.reduce((s,g) => s + num(g.fee), 0);
+  const totalFuel   = jogos.reduce((s,g) => s + fuelOf(g), 0);
+  const totalExtras = jogos.reduce((s,g) => s + extrasTotalOf(g), 0);
+  const recebido    = jogos.reduce((s,g) => s + receivedOf(g), 0);
+  const pendente    = jogos.reduce((s,g) => s + pendingOf(g), 0);
+
+  let html = `
+    <div class="stats">
+      <div class="stat highlight">
+        <div class="lbl">Falta receber</div>
+        <div class="val">${money(pendente)}</div>
+      </div>
+      <div class="stat"><div class="lbl">Já recebido</div><div class="val">${money(recebido)}</div></div>
+      <div class="stat"><div class="lbl">Total previsto</div><div class="val">${money(totalFee + totalFuel + totalExtras)}</div></div>
+      <div class="stat amber"><div class="lbl">Gasolina acumulada</div><div class="val">${money(totalFuel)}</div></div>
+      <div class="stat purple"><div class="lbl">Extras (bixo, bônus)</div><div class="val">${money(totalExtras)}</div></div>
+      <div class="stat" style="grid-column:1/-1"><div class="lbl">Jogos no total</div><div class="val">${jogos.length}</div></div>
+    </div>
+
+    <div class="panel">
+      <h3>Histórico por período</h3>
+      <div class="filters" style="margin-bottom:12px">
+        <button class="chip ${!histFrom && !histTo ? 'active' : ''}" data-act="hist-quick" data-range="all">Tudo</button>
+        <button class="chip" data-act="hist-quick" data-range="this-month">Este mês</button>
+        <button class="chip" data-act="hist-quick" data-range="last-month">Mês passado</button>
+        <button class="chip" data-act="hist-quick" data-range="year">Este ano</button>
+      </div>
+      <div class="row" style="margin-bottom:14px">
+        <label class="field" style="margin:0">
+          <span>De</span>
+          <input type="date" id="hist-from" value="${histFrom}">
+        </label>
+        <label class="field" style="margin:0">
+          <span>Até</span>
+          <input type="date" id="hist-to" value="${histTo}">
+        </label>
+      </div>
+      <div id="hist-content"></div>
+    </div>
+  `;
+  return html;
+}
+
+/* ================ ABA ADMIN ================ */
+function viewAdmin(){
+  const s = state.settings;
+  const fotoHTML = s.playerPhoto
+    ? `<img src="${s.playerPhoto}" alt="">`
+    : (s.playerName || 'J').trim().charAt(0).toUpperCase();
+
+  const swatches = THEMES.map(t => `
+    <button class="color-swatch ${s.theme===t.id?'active':''}"
+            style="background:linear-gradient(145deg,${t.main},${t.dark})"
+            data-act="set-theme" data-theme="${t.id}"
+            title="${t.label}" aria-label="${t.label}"></button>
+  `).join('');
+
+  return `
+  <section class="panel">
+    <h3>Aparência</h3>
+    <div class="avatar-picker">
+      <div class="avatar-preview" id="avatar-preview">${fotoHTML}</div>
+      <div class="avatar-actions">
+        <button class="btn" data-act="pick-photo">📷 Trocar foto</button>
+        ${s.playerPhoto ? `<button class="btn danger" data-act="remove-photo">Remover foto</button>` : ''}
+      </div>
+    </div>
+    <input type="file" id="photo-input" accept="image/*" hidden>
+
+    <p class="muted small" style="margin-top:14px;margin-bottom:8px;font-weight:600">Cor de destaque</p>
+    <div class="color-grid">${swatches}</div>
+  </section>
+
+  <section class="panel">
+    <h3>Perfil do jogador</h3>
+    <label class="field"><span>Nome</span>
+      <input id="cfg-name" value="${esc(s.playerName)}" placeholder="Nome do jogador">
+    </label>
+    <label class="field"><span>Time / apelido</span>
+      <input id="cfg-team" value="${esc(s.teamName)}" placeholder="Ex: Unidos da Vila">
+    </label>
+    <p class="muted small" style="margin-top:-6px">
+      💡 Perfil, cidade-base e estatísticas agora ficam no seu perfil (toque no avatar no topo).
+    </p>
+    <button class="btn primary" data-act="save-perfil">Salvar perfil</button>
+  </section>
+
+  <section class="panel">
+    <h3>Valores padrão</h3>
+    <div class="row">
+      <label class="field"><span>Valor do jogo (R$)</span>
+        <input id="cfg-fee" type="number" step="0.01" inputmode="decimal" value="${num(s.defaultFee)}">
+      </label>
+      <label class="field"><span>Valor por km (R$)</span>
+        <input id="cfg-km" type="number" step="0.01" inputmode="decimal" value="${num(s.pricePerKm)}">
+      </label>
+    </div>
+    <p class="muted small" style="margin-top:-4px">
+      Gasolina = <b>km rodados × valor por km</b>. Os km vêm do cálculo automático de rota.
+    </p>
+    <button class="btn primary" data-act="save-valores">Salvar valores</button>
+  </section>
+
+  <section class="panel">
+    <h3>Cidades cadastradas</h3>
+    <div class="chips" id="city-chips">${cityChipsHTML()}</div>
+    <div class="row">
+      <input id="new-city" placeholder="Nova cidade"
+        style="flex:1;background:var(--surface2);border:1px solid var(--line);color:var(--txt);border-radius:12px;padding:13px 14px;outline:none">
+      <button class="btn primary" style="width:auto;margin:0;padding:13px 20px" data-act="add-city">Add</button>
+    </div>
+    <button class="btn" data-act="clean-cities" style="margin-top:10px">🧹 Remover duplicados</button>
+  </section>
+
+  <section class="panel">
+    <h3>Times cadastrados</h3>
+    <div class="chips" id="team-chips">${teamChipsHTML()}</div>
+    <div class="row">
+      <input id="new-team" placeholder="Novo time"
+        style="flex:1;background:var(--surface2);border:1px solid var(--line);color:var(--txt);border-radius:12px;padding:13px 14px;outline:none">
+      <button class="btn primary" style="width:auto;margin:0;padding:13px 20px" data-act="add-team">Add</button>
+    </div>
+    <button class="btn" data-act="clean-teams" style="margin-top:10px">🧹 Remover duplicados</button>
+    <p class="muted small" style="margin-top:10px">
+      Times novos são adicionados automaticamente ao salvar um jogo.
+    </p>
+  </section>
+
+  <section class="panel">
+    <h3>Dados</h3>
+    <button class="btn" data-act="export">⬇️ Exportar backup (.json)</button>
+    <button class="btn" data-act="import">⬆️ Importar backup</button>
+    <input type="file" id="file-input" accept="application/json,.json" hidden>
+    <button class="btn danger" data-act="wipe">🗑️ Apagar todos os dados</button>
+    <p class="muted small" style="margin-top:12px">
+      ☁️ Os dados são salvos na sua conta e ficam disponíveis em qualquer aparelho.
+    </p>
+  </section>
+
+  <p class="muted small" style="text-align:center;padding:6px 0 20px">Agenda do Jogador · v1.8</p>
+  `;
+}
+
+function cityChipsHTML(){
+  const c = state.settings.cities;
+  if(!c.length) return '<span class="muted">Nenhuma cidade cadastrada</span>';
+  return c.map((city, i) =>
+    `<span class="chip-static">${esc(city)}<button data-act="del-city" data-i="${i}" aria-label="Remover">×</button></span>`
+  ).join('');
+}
+function teamChipsHTML(){
+  const t = state.settings.teams || [];
+  if(!t.length) return '<span class="muted">Nenhum time cadastrado</span>';
+  return t.map((team, i) =>
+    `<span class="chip-static">${esc(team)}<button data-act="del-team" data-i="${i}" aria-label="Remover">×</button></span>`
+  ).join('');
+}
+
+/* ================ AUTOCOMPLETE ================ */
+function setupAutocomplete(inputEl, listEl, onSelect){
+  let timer = null;
+  let ctrl  = null;
+
+  inputEl.addEventListener('input', () => {
+    const q = inputEl.value.trim();
+    clearTimeout(timer);
+    if(ctrl) ctrl.abort();
+    if(q.length < 3){ listEl.classList.remove('open'); listEl.innerHTML = ''; return; }
+
+    timer = setTimeout(async () => {
+      ctrl = new AbortController();
+      listEl.classList.add('open');
+      listEl.innerHTML = '<div class="ac-loading">Buscando…</div>';
+      try{
+        const res = await buscarCidades(q, ctrl.signal);
+        if(!res.length){
+          listEl.innerHTML = '<div class="ac-loading">Nenhum lugar encontrado</div>';
+          return;
+        }
+        listEl.innerHTML = res.map((r, i) =>
+          `<div class="ac-item" data-i="${i}">${esc(r.nome)}${r.sub?`<small>${esc(r.sub)}</small>`:''}</div>`
+        ).join('');
+        listEl.querySelectorAll('.ac-item').forEach(el => {
+          el.addEventListener('click', () => {
+            const r = res[Number(el.dataset.i)];
+            inputEl.value = r.nome + (r.sub ? ' - ' + r.sub.split(' · ').slice(0,2).join(', ') : '');
+            listEl.classList.remove('open');
+            listEl.innerHTML = '';
+            if(onSelect) onSelect(r);
+          });
+        });
+      }catch(err){
+        if(err.name !== 'AbortError'){
+          listEl.innerHTML = '<div class="ac-loading">Erro ao buscar</div>';
+        }
+      }
+    }, 350);
+  });
+
+  inputEl.addEventListener('blur', () => {
+    setTimeout(() => { listEl.classList.remove('open'); }, 200);
+  });
+}
+
+/* ================ PICKERS ================ */
+let pickerResolve = null;
+function abrirPicker(tipo, valorInicial){
+  return new Promise(resolve => {
+    pickerResolve = resolve;
+    const picker = document.getElementById('picker');
+    if(tipo === 'date'){
+      let ref = valorInicial ? parseISO(valorInicial) : new Date();
+      ref = new Date(ref.getFullYear(), ref.getMonth(), 1);
+      renderCalendario(picker, ref, valorInicial);
+    } else {
+      renderHora(picker, valorInicial || '');
+    }
+    picker.classList.add('open');
+    document.body.classList.add('locked');
+  });
+}
+function fecharPicker(valor){
+  const picker = document.getElementById('picker');
+  picker.classList.remove('open');
+  document.body.classList.remove('locked');
+  if(pickerResolve){ pickerResolve(valor); pickerResolve = null; }
+  setTimeout(() => { picker.innerHTML = ''; }, 300);
+}
+function renderCalendario(picker, ref, valorSelecionado){
+  const y = ref.getFullYear();
+  const m = ref.getMonth();
+  const hoje = new Date();
+  const primeiro = new Date(y, m, 1);
+  const ultimo   = new Date(y, m+1, 0);
+  const inicioSemana = primeiro.getDay();
+  const diasNoMes = ultimo.getDate();
+  const diasPrev  = new Date(y, m, 0).getDate();
+
+  const cells = [];
+  for(let i = inicioSemana - 1; i >= 0; i--) cells.push({ d: diasPrev - i, other: true, iso: null });
+  for(let d = 1; d <= diasNoMes; d++){
+    const iso = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    cells.push({ d, other: false, iso });
+  }
+  while(cells.length % 7 !== 0){
+    const d = cells.length - (inicioSemana + diasNoMes) + 1;
+    cells.push({ d, other: true, iso: null });
+  }
+  const hojeISOStr = `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}-${String(hoje.getDate()).padStart(2,'0')}`;
+
+  picker.innerHTML = `
+    <div class="picker-card">
+      <div class="picker-head">
+        <span class="picker-title">Escolher data</span>
+        <button class="link" data-pk="close">Fechar</button>
+      </div>
+      <div class="cal-head">
+        <button class="cal-nav" data-pk="prev">${ICONS.chevL}</button>
+        <span class="cal-month">${MONTHS_FULL[m]} ${y}</span>
+        <button class="cal-nav" data-pk="next">${ICONS.chev}</button>
+      </div>
+      <div class="cal-weekdays">${['D','S','T','Q','Q','S','S'].map(d => `<span>${d}</span>`).join('')}</div>
+      <div class="cal-grid">
+        ${cells.map(c => {
+          const cls = ['cal-day'];
+          if(c.other) cls.push('other');
+          if(c.iso === hojeISOStr) cls.push('today');
+          if(c.iso && c.iso === valorSelecionado) cls.push('selected');
+          return `<button class="${cls.join(' ')}" ${c.iso?`data-iso="${c.iso}"`:'disabled'}>${c.d}</button>`;
+        }).join('')}
+      </div>
+      <button class="btn primary" style="margin-top:16px" data-pk="today">Ir para hoje</button>
+    </div>
+  `;
+  picker.querySelector('[data-pk="close"]').onclick = () => fecharPicker(null);
+  picker.querySelector('[data-pk="prev"]').onclick  = () => renderCalendario(picker, new Date(y, m-1, 1), valorSelecionado);
+  picker.querySelector('[data-pk="next"]').onclick  = () => renderCalendario(picker, new Date(y, m+1, 1), valorSelecionado);
+  picker.querySelector('[data-pk="today"]').onclick = () => fecharPicker(hojeISOStr);
+  picker.querySelectorAll('[data-iso]').forEach(b => b.onclick = () => fecharPicker(b.dataset.iso));
+  picker.onclick = e => { if(e.target === picker) fecharPicker(null); };
+}
+function renderHora(picker, valor){
+  const [hAtual, mAtual] = (valor || '').split(':').map(x => Number(x) || 0);
+  const horas   = Array.from({length:24}, (_, i) => String(i).padStart(2,'0'));
+  const minutos = Array.from({length:12}, (_, i) => String(i*5).padStart(2,'0'));
+
+  picker.innerHTML = `
+    <div class="picker-card">
+      <div class="picker-head">
+        <span class="picker-title">Escolher horário</span>
+        <button class="link" data-pk="close">Fechar</button>
+      </div>
+      <div class="time-picker">
+        <div class="tp-col">
+          <div class="tp-header">Hora</div>
+          <div class="tp-scroll" id="tp-h">
+            ${horas.map(h => `<button class="tp-item ${Number(h)===hAtual&&valor?'selected':''}" data-h="${h}">${h}</button>`).join('')}
+          </div>
+        </div>
+        <div class="tp-col">
+          <div class="tp-header">Minuto</div>
+          <div class="tp-scroll" id="tp-m">
+            ${minutos.map(m => `<button class="tp-item ${Number(m)===mAtual&&valor?'selected':''}" data-m="${m}">${m}</button>`).join('')}
+          </div>
+        </div>
+      </div>
+      <div class="row" style="margin-top:14px">
+        <button class="btn ghost" data-pk="clear" style="margin:0">Limpar</button>
+        <button class="btn primary" data-pk="ok" style="margin:0">OK</button>
+      </div>
+    </div>
+  `;
+
+  let hSel = valor ? hAtual : 12;
+  let mSel = valor ? mAtual : 0;
+  const selH = picker.querySelector(`[data-h="${String(hSel).padStart(2,'0')}"]`);
+  const selM = picker.querySelector(`[data-m="${String(mSel).padStart(2,'0')}"]`);
+  if(selH) setTimeout(() => selH.scrollIntoView({ block:'center' }), 50);
+  if(selM) setTimeout(() => selM.scrollIntoView({ block:'center' }), 50);
+  picker.querySelectorAll('[data-h]').forEach(b => b.onclick = () => {
+    picker.querySelectorAll('[data-h]').forEach(x => x.classList.remove('selected'));
+    b.classList.add('selected'); hSel = Number(b.dataset.h);
+  });
+  picker.querySelectorAll('[data-m]').forEach(b => b.onclick = () => {
+    picker.querySelectorAll('[data-m]').forEach(x => x.classList.remove('selected'));
+    b.classList.add('selected'); mSel = Number(b.dataset.m);
+  });
+  picker.querySelector('[data-pk="close"]').onclick = () => fecharPicker(null);
+  picker.querySelector('[data-pk="clear"]').onclick = () => fecharPicker('');
+  picker.querySelector('[data-pk="ok"]').onclick    = () => fecharPicker(`${String(hSel).padStart(2,'0')}:${String(mSel).padStart(2,'0')}`);
+  picker.onclick = e => { if(e.target === picker) fecharPicker(null); };
+}
+
+/* ================ CRIAR LINHA DE EXTRA ================ */
+function criarExtraRow(label, value){
+  const div = document.createElement('div');
+  div.className = 'extra-row';
+  div.innerHTML = `
+    <input class="extra-label" placeholder="Ex: Bônus, Bixo…" value="${esc(label||'')}">
+    <input class="extra-value" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0,00" value="${value||''}">
+    <button type="button" class="extra-remove" aria-label="Remover">×</button>
+  `;
+  div.querySelector('.extra-remove').onclick = () => {
+    div.remove();
+    atualizarExtrasTotal();
+  };
+  div.querySelectorAll('input').forEach(i => i.addEventListener('input', atualizarExtrasTotal));
+  return div;
+}
+
+function atualizarExtrasTotal(){
+  const list = document.getElementById('extras-list');
+  if(!list) return;
+  let total = 0;
+  list.querySelectorAll('.extra-row').forEach(row => {
+    const val = num(row.querySelector('.extra-value').value);
+    total += val;
+  });
+  const el = document.getElementById('extras-total-val');
+  if(el) el.textContent = money(total);
+}
+
+/* ================ FORM DE JOGO (Criar/Editar) ================ */
+function abrirForm(id){
+  const g = id ? state.games.find(x => x.id === id) : null;
+  const s = state.settings;
+  const sheet = document.getElementById('sheet');
+
+  const kmInit   = g ? num(g.km) : 0;
+  const kmPreco  = g ? num(g.pricePerKm) : num(s.pricePerKm);
+  const fuelInit = (kmInit * kmPreco).toFixed(2);
+  const dataVal  = g ? (g.date||'') : hojeISO();
+  const horaVal  = g ? (g.time||'') : '';
+
+  const gpsMsg = s.homeCoords
+    ? 'Digite a cidade e aguarde a sugestão para calcular os km automaticamente.'
+    : '⚠️ Configure sua cidade-base no perfil para calcular km automaticamente.';
+
+  sheet.innerHTML = `
+    <div class="sheet-head">
+      <button class="link" data-act="close-sheet">Cancelar</button>
+      <span class="sheet-title">${g ? 'Editar jogo' : 'Novo jogo'}</span>
+      <span style="width:60px"></span>
+    </div>
+    <div class="sheet-body">
+      <form id="game-form" autocomplete="off" onsubmit="return false">
+
+        <label class="field" style="margin-bottom:12px"><span>Data do jogo</span>
+          <div class="dt-card" id="btn-date">
+            <div class="dt-icon">${ICONS.calendar}</div>
+            <div class="dt-body">
+              <div class="dt-label">Quando</div>
+              <div class="dt-value ${dataVal?'':'placeholder'}" id="dt-date-val">
+                ${dataVal ? fmtDataLonga(dataVal) : 'Selecionar data'}
+              </div>
+            </div>
+            <div class="dt-arrow">${ICONS.chev}</div>
+          </div>
+          <input type="hidden" name="date" id="inp-date" value="${esc(dataVal)}">
+        </label>
+
+        <label class="field" style="margin-bottom:12px"><span>Horário</span>
+          <div class="dt-card" id="btn-time">
+            <div class="dt-icon">${ICONS.clock}</div>
+            <div class="dt-body">
+              <div class="dt-label">Que horas</div>
+              <div class="dt-value ${horaVal?'':'placeholder'}" id="dt-time-val">
+                ${horaVal || 'Selecionar hora'}
+              </div>
+            </div>
+            <div class="dt-arrow">${ICONS.chev}</div>
+          </div>
+          <input type="hidden" name="time" id="inp-time" value="${esc(horaVal)}">
+        </label>
+
+        <label class="field"><span>Cidade do jogo</span>
+          <div class="ac-wrap">
+            <input name="city" id="inp-city" list="cities-list"
+                   value="${g ? esc(g.city||'') : ''}" placeholder="Digite pra ver sugestões" autocomplete="off">
+            <div class="ac-list" id="ac-city"></div>
+          </div>
+        </label>
+        <datalist id="cities-list">
+          ${s.cities.map(x => `<option value="${esc(x)}"></option>`).join('')}
+        </datalist>
+
+        <div class="field">
+          <span>Ponto de partida</span>
+          <div class="origin-toggle">
+            <button type="button" class="origin-btn active" id="origin-home" data-origin="home">
+              🏠 Cidade-base
+            </button>
+            <button type="button" class="origin-btn" id="origin-gps" data-origin="gps">
+              📍 Localização atual
+            </button>
+          </div>
+        </div>
+
+        <div class="gps-status" id="gps-status">${ICONS.route}<span>${gpsMsg}</span></div>
+
+        <label class="field"><span>Time</span>
+          <input name="opponent" list="teams-list"
+                 value="${g ? esc(g.opponent||'') : ''}"
+                 placeholder="Ex: Unidos FC" autocomplete="off">
+        </label>
+        <datalist id="teams-list">
+          ${(s.teams||[]).map(x => `<option value="${esc(x)}"></option>`).join('')}
+        </datalist>
+
+        <label class="field"><span>Valor do jogo (R$)</span>
+          <input type="number" step="0.01" min="0" inputmode="decimal" name="fee"
+                 value="${g ? num(g.fee) : num(s.defaultFee)}">
+        </label>
+
+        <div class="row">
+          <label class="field"><span>Distância (km)</span>
+            <input type="number" step="0.1" min="0" inputmode="decimal" name="km"
+                   id="f-km" value="${g ? num(g.km) : 0}" placeholder="Auto">
+          </label>
+          <label class="field"><span>Valor por km (R$)</span>
+            <input type="number" step="0.01" min="0" inputmode="decimal" name="pricePerKm"
+                   id="f-kmpreco" value="${kmPreco}">
+          </label>
+        </div>
+
+        <div class="strip" style="margin-top:-2px">
+          <div>
+            <span class="strip-label">Gasolina do jogo</span>
+            <strong id="f-fuel-preview">${money(fuelInit)}</strong>
+          </div>
+          <div class="strip-right" id="f-km-info">${kmInit} km × ${money(kmPreco)}/km</div>
+        </div>
+
+        <div class="strip" style="margin-top:20px;margin-bottom:16px">
+          <div>
+            <span class="strip-label">Total previsto</span>
+            <strong>${money(num(g ? g.fee : s.defaultFee) + ((g ? num(g.km) : 0) * kmPreco))}</strong>
+          </div>
+          <div class="strip-right" style="font-size:11px">
+            Você registra os valores reais<br>ao encerrar o jogo
+          </div>
+        </div>
+
+        <label class="field"><span>Observações</span>
+          <textarea name="notes" rows="3" placeholder="Ex: campo de terra, levar chuteira extra">${g ? esc(g.notes||'') : ''}</textarea>
+        </label>
+
+        <button type="button" class="btn primary full" data-act="submit-form" style="margin-top:20px;padding:16px;font-size:15px">
+          ${g ? '💾 Salvar alterações' : '✓ Adicionar jogo à agenda'}
+        </button>
+
+        ${g ? `<button type="button" class="btn danger full" data-act="delete-game" data-id="${g.id}" style="margin-top:10px">Excluir jogo</button>` : ''}
+      </form>
+    </div>
+  `;
+
+  formEditId = id || null;
+  sheet.classList.add('open');
+  document.body.classList.add('locked');
+
+  document.getElementById('btn-date').onclick = async () => {
+    const v = await abrirPicker('date', document.getElementById('inp-date').value);
+    if(v === null) return;
+    document.getElementById('inp-date').value = v;
+    const el = document.getElementById('dt-date-val');
+    el.textContent = v ? fmtDataLonga(v) : 'Selecionar data';
+    el.classList.toggle('placeholder', !v);
+  };
+
+  document.getElementById('btn-time').onclick = async () => {
+    const v = await abrirPicker('time', document.getElementById('inp-time').value);
+    if(v === null) return;
+    document.getElementById('inp-time').value = v;
+    const el = document.getElementById('dt-time-val');
+    el.textContent = v || 'Selecionar hora';
+    el.classList.toggle('placeholder', !v);
+  };
+
+  const inpCity = document.getElementById('inp-city');
+  const listCity = document.getElementById('ac-city');
+  const statusEl = document.getElementById('gps-status');
+  let cityCoords = g && g.cityCoords ? g.cityCoords : null;
+  let useGPS = false;
+  let gpsCoords = null;
+
+  const btnHome = document.getElementById('origin-home');
+  const btnGPS  = document.getElementById('origin-gps');
+
+  btnHome.onclick = async () => {
+    useGPS = false;
+    btnHome.classList.add('active');
+    btnGPS.classList.remove('active');
+    if(cityCoords) await tentarCalcularRota();
+  };
+
+  btnGPS.onclick = async () => {
+    btnGPS.textContent = '📡 Obtendo…';
+    btnGPS.disabled = true;
+    try{
+      const coords = await obterLocalizacaoAtual();
+      gpsCoords = { lat: coords.lat, lng: coords.lng };
+      useGPS = true;
+      btnGPS.classList.add('active');
+      btnHome.classList.remove('active');
+      btnGPS.textContent = '📍 Localização atual';
+      if(cityCoords) await tentarCalcularRota();
+      else {
+        statusEl.className = 'gps-status';
+        statusEl.innerHTML = `${ICONS.route}<span>✓ Localização capturada — selecione a cidade do jogo</span>`;
+      }
+    }catch(err){
+      btnGPS.textContent = '📍 Localização atual';
+      toast(err.message || 'Não foi possível obter localização');
+    }finally{
+      btnGPS.disabled = false;
+    }
+  };
+
+  setupAutocomplete(inpCity, listCity, async r => {
+    cityCoords = { lat: r.lat, lng: r.lng };
+    inpCity.value = r.nome + (r.sub ? ' - ' + r.sub.split(' · ').slice(0,2).join(', ') : '');
+    await tentarCalcularRota();
+  });
+
+  async function tentarCalcularRota(){
+    const origem = useGPS ? gpsCoords : state.settings.homeCoords;
+
+    if(!origem){
+      statusEl.className = 'gps-status erro';
+      statusEl.innerHTML = useGPS
+        ? `${ICONS.route}<span>⚠️ Ative "Localização atual" para capturar o ponto de partida</span>`
+        : `${ICONS.route}<span>⚠️ Defina sua cidade-base no perfil ou use a localização atual</span>`;
+      return;
+    }
+    if(!cityCoords){
+      statusEl.className = 'gps-status';
+      statusEl.innerHTML = `${ICONS.route}<span>Selecione a cidade na lista para calcular</span>`;
+      return;
+    }
+    statusEl.className = 'gps-status loading';
+    statusEl.innerHTML = `${ICONS.route}<span>Calculando distância…</span>`;
+    try{
+      const km = await calcularRota(origem, cityCoords);
+      const kmEl = document.getElementById('f-km');
+      kmEl.value = km.toFixed(1);
+      atualizarPreview();
+      statusEl.className = 'gps-status ok';
+      const origemTxt = useGPS ? '📍 Localização atual' : '🏠 Cidade-base';
+      statusEl.innerHTML = `${ICONS.route}<span>✓ ${km.toFixed(1)} km (${origemTxt} → destino)</span>`;
+    }catch(err){
+      statusEl.className = 'gps-status erro';
+      statusEl.innerHTML = `${ICONS.route}<span>Não foi possível calcular — digite os km manualmente</span>`;
+    }
+  }
+
+  const kmEl = document.getElementById('f-km');
+  const prEl = document.getElementById('f-kmpreco');
+  const pvEl = document.getElementById('f-fuel-preview');
+  const inEl = document.getElementById('f-km-info');
+  function atualizarPreview(){
+    const km = num(kmEl.value), p = num(prEl.value);
+    pvEl.textContent = money(km * p);
+    inEl.textContent = `${km} km × ${money(p)}/km`;
+  }
+  window.atualizarPreview = atualizarPreview;
+  kmEl.addEventListener('input', atualizarPreview);
+  prEl.addEventListener('input', atualizarPreview);
+
+  if(g && g.cityCoords && state.settings.homeCoords){
+    setTimeout(tentarCalcularRota, 300);
+  }
+}
+
+/* ================ ENCERRAR JOGO ================ */
+function abrirEncerrarJogo(id){
+  const g = state.games.find(x => x.id === id);
+  if(!g) return;
+
+  const extras = Array.isArray(g.extras) ? g.extras : [];
+  const sheet = document.getElementById('sheet');
+
+  sheet.innerHTML = `
+    <div class="sheet-head">
+      <button class="link" data-act="close-sheet">Cancelar</button>
+      <span class="sheet-title">Encerrar jogo</span>
+      <span style="width:60px"></span>
+    </div>
+    <div class="sheet-body">
+      <form id="finish-form" autocomplete="off" onsubmit="return false">
+
+        <div class="strip" style="margin-bottom:18px">
+          <div>
+            <span class="strip-label">Jogo</span>
+            <strong>${esc(g.city || 'Sem cidade')}</strong>
+          </div>
+          <div class="strip-right">
+            ${g.date ? fmtDataLonga(g.date) : 'Sem data'}<br>
+            ${g.opponent ? esc(g.opponent) : 'Sem time'}
+          </div>
+        </div>
+
+        <p class="muted small" style="margin-bottom:16px">
+          Preencha os resultados e valores finais deste jogo.
+        </p>
+
+        <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
+
+        <h4 style="margin:0 0 12px;font-size:13px;color:var(--accent);font-weight:700">⚽ Minha atuação</h4>
+
+        <div class="row">
+          <label class="field"><span>Gols marcados</span>
+            <input type="number" step="1" min="0" inputmode="numeric" name="goals"
+                   value="${num(g.goals) || 0}">
+          </label>
+          <label class="field"><span>Assistências</span>
+            <input type="number" step="1" min="0" inputmode="numeric" name="assists"
+                   value="${num(g.assists) || 0}">
+          </label>
+        </div>
+
+        <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
+
+        <h4 style="margin:0 0 12px;font-size:13px;color:var(--accent);font-weight:700">💰 Valores recebidos</h4>
+
+        <label class="switch">
+          <input type="checkbox" name="feeReceived" ${g.feeReceived ? 'checked' : ''}>
+          <span>Valor do jogo já foi recebido (${money(g.fee)})</span>
+        </label>
+        <label class="switch">
+          <input type="checkbox" name="fuelReceived" ${g.fuelReceived ? 'checked' : ''}>
+          <span>Gasolina já foi recebida (${money(fuelOf(g))})</span>
+        </label>
+
+        <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
+
+        <h4 style="margin:0 0 12px;font-size:13px;color:var(--accent);font-weight:700">🎲 Extras do jogo</h4>
+
+        <div class="preset-row">
+          <button type="button" class="preset-btn" data-act="preset-extra" data-preset="⚽ Gol">⚽ Gol</button>
+          <button type="button" class="preset-btn" data-act="preset-extra" data-preset="🎯 Assistência">🎯 Assistência</button>
+          <button type="button" class="preset-btn" data-act="preset-extra" data-preset="🎲 Bixo">🎲 Bixo</button>
+          <button type="button" class="preset-btn" data-act="preset-extra" data-preset="🏆 Vitória">🏆 Vitória</button>
+        </div>
+        <div class="extras-list" id="extras-list"></div>
+        <button type="button" class="btn ghost" data-act="add-extra-row" style="margin-top:0">+ Adicionar extra</button>
+        <div class="extras-total">
+          <span class="lbl">Total de extras</span>
+          <span class="val" id="extras-total-val">R$ 0,00</span>
+        </div>
+
+        <label class="switch">
+          <input type="checkbox" name="extrasReceived" ${g.extrasReceived ? 'checked' : ''}>
+          <span>Extras já foram recebidos</span>
+        </label>
+
+        <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
+
+        <label class="field"><span>Observações finais</span>
+          <textarea name="notes" rows="3" placeholder="Como foi o jogo?">${esc(g.notes||'')}</textarea>
+        </label>
+
+        <button type="button" class="btn primary full" data-act="submit-finish" data-id="${g.id}" style="margin-top:20px;padding:16px;font-size:15px">
+          Encerrar jogo
+        </button>
+      </form>
+    </div>
+  `;
+
+  formEditId = id;
+  sheet.classList.add('open');
+  document.body.classList.add('locked');
+
+  const extrasList = document.getElementById('extras-list');
+  extras.forEach(e => extrasList.appendChild(criarExtraRow(e.label, e.value)));
+  atualizarExtrasTotal();
+}
+
+function submitEncerrar(id){
+  const form = document.getElementById('finish-form');
+  if(!form) return;
+  const g = state.games.find(x => x.id === id);
+  if(!g) return;
+
+  if(!confirm('Confirmar encerramento? O jogo irá para a aba Concluídos.')) return;
+
+  const fd = new FormData(form);
+
+  const extras = [];
+  form.querySelectorAll('#extras-list .extra-row').forEach(row => {
+    const label = row.querySelector('.extra-label').value.trim();
+    const value = num(row.querySelector('.extra-value').value);
+    if(label && value > 0){
+      extras.push({ id: uid(), label, value });
+    }
+  });
+
+  g.finished       = true;
+  g.finishedAt     = new Date().toISOString();
+  g.goals          = num(fd.get('goals'));
+  g.assists        = num(fd.get('assists'));
+  g.feeReceived    = !!fd.get('feeReceived');
+  g.fuelReceived   = !!fd.get('fuelReceived');
+  g.extrasReceived = !!fd.get('extrasReceived');
+  g.extras         = extras;
+  g.notes          = (fd.get('notes') || '').trim();
+
+  salvarEstado();
+  fecharForm();
+  render();
+  toast('Jogo encerrado');
+}
+
+function fecharForm(){
+  const sheet = document.getElementById('sheet');
+  sheet.classList.remove('open');
+  formEditId = null;
+  document.body.classList.remove('locked');
+  delete window.atualizarPreview;
+  setTimeout(() => { if(!sheet.classList.contains('open')) sheet.innerHTML = ''; }, 320);
+}
+
+function submitForm(){
+  const form = document.getElementById('game-form');
+  if(!form) return;
+  const fd = new FormData(form);
+
+  const dados = {
+    date:          fd.get('date') || '',
+    time:          fd.get('time') || '',
+    city:          (fd.get('city') || '').trim(),
+    opponent:      (fd.get('opponent') || '').trim(),
+    fee:           num(fd.get('fee')),
+    km:            num(fd.get('km')),
+    pricePerKm:    num(fd.get('pricePerKm')),
+    notes:         (fd.get('notes') || '').trim()
+  };
+
+  if(formEditId){
+    const i = state.games.findIndex(g => g.id === formEditId);
+    if(i >= 0) state.games[i] = Object.assign({}, state.games[i], dados);
+    toast('Jogo atualizado');
+  } else {
+    state.games.push(Object.assign({ id: uid() }, dados));
+    toast('Jogo adicionado');
+  }
+
+  if(dados.city && !state.settings.cities.includes(dados.city)){
+    state.settings.cities.push(dados.city);
+  }
+  if(dados.opponent && !state.settings.teams.includes(dados.opponent)){
+    state.settings.teams.push(dados.opponent);
+  }
+
+  salvarEstado();
+  fecharForm();
+  render();
+}
+
+/* ================ LIMPAR DUPLICADOS ================ */
+function limparDuplicados(arr){
+  const seen = new Set();
+  const out = [];
+  let removed = 0;
+  (arr||[]).forEach(item => {
+    const key = String(item).trim().toLowerCase();
+    if(!key || seen.has(key)){ removed++; return; }
+    seen.add(key);
+    out.push(String(item).trim());
+  });
+  return { out, removed };
+}
+
+/* ================ AÇÕES ================ */
+document.addEventListener('click', e => {
+  const nav = e.target.closest('.nav-btn');
+  if(nav && !e.target.closest('[data-act]')){ tab = nav.dataset.tab; render(); return; }
+
+  const btn = e.target.closest('[data-act]');
+  if(!btn) return;
+  const act = btn.dataset.act;
+
+  if(act === 'hist-quick'){
+    const [f, t] = rangeDates(btn.dataset.range);
+    setHistRange(f, t);
+    return;
+  }
+  if(act === 'edit'){ abrirForm(btn.dataset.id); return; }
+  if(act === 'close-sheet'){ fecharForm(); return; }
+  if(act === 'finish-game'){ abrirEncerrarJogo(btn.dataset.id); return; }
+  if(act === 'submit-finish'){ submitEncerrar(btn.dataset.id); return; }
+  if(act === 'edit-finished'){ abrirForm(btn.dataset.id); return; }
+  if(act === 'submit-form'){ submitForm(); return; }
+
+  if(act === 'delete-game'){
+    if(!confirm('Excluir este jogo?')) return;
+    state.games = state.games.filter(x => x.id !== btn.dataset.id);
+    salvarEstado(); fecharForm(); render(); toast('Jogo excluído');
+    return;
+  }
+
+  if(act === 'add-extra-row'){
+    const list = document.getElementById('extras-list');
+    const row = criarExtraRow('', '');
+    list.appendChild(row);
+    row.querySelector('.extra-label').focus();
+    atualizarExtrasTotal();
+    return;
+  }
+  if(act === 'preset-extra'){
+    const list = document.getElementById('extras-list');
+    const row = criarExtraRow(btn.dataset.preset, '');
+    list.appendChild(row);
+    row.querySelector('.extra-value').focus();
+    atualizarExtrasTotal();
+    return;
+  }
+
+  if(act === 'save-perfil'){
+    state.settings.playerName = document.getElementById('cfg-name').value.trim() || 'Jogador';
+    state.settings.teamName   = document.getElementById('cfg-team').value.trim();
+    if(sessao.perfil === 'player') sessao.nome = state.settings.playerName;
+    salvarEstado(); salvarSessao(sessao); render(); toast('Perfil salvo');
+    return;
+  }
+
+  if(act === 'save-valores'){
+    state.settings.defaultFee = num(document.getElementById('cfg-fee').value);
+    state.settings.pricePerKm = num(document.getElementById('cfg-km').value);
+    salvarEstado(); render(); toast('Valores salvos');
+    return;
+  }
+
+  if(act === 'add-city'){
+    const inp = document.getElementById('new-city');
+    const v = inp.value.trim();
+    if(!v) return;
+    if(state.settings.cities.some(c => c.toLowerCase() === v.toLowerCase())){
+      toast('Cidade já cadastrada'); return;
+    }
+    state.settings.cities.push(v);
+    salvarEstado();
+    document.getElementById('city-chips').innerHTML = cityChipsHTML();
+    inp.value = '';
+    return;
+  }
+  if(act === 'del-city'){
+    state.settings.cities.splice(Number(btn.dataset.i), 1);
+    salvarEstado();
+    document.getElementById('city-chips').innerHTML = cityChipsHTML();
+    return;
+  }
+  if(act === 'clean-cities'){
+    const { out, removed } = limparDuplicados(state.settings.cities);
+    state.settings.cities = out;
+    salvarEstado();
+    document.getElementById('city-chips').innerHTML = cityChipsHTML();
+    toast(removed > 0 ? `${removed} duplicada${removed===1?'':'s'} removida${removed===1?'':'s'}` : 'Nenhuma duplicada encontrada');
+    return;
+  }
+
+  if(act === 'add-team'){
+    const inp = document.getElementById('new-team');
+    const v = inp.value.trim();
+    if(!v) return;
+    if(state.settings.teams.some(t => t.toLowerCase() === v.toLowerCase())){
+      toast('Time já cadastrado'); return;
+    }
+    state.settings.teams.push(v);
+    salvarEstado();
+    document.getElementById('team-chips').innerHTML = teamChipsHTML();
+    inp.value = '';
+    return;
+  }
+  if(act === 'del-team'){
+    state.settings.teams.splice(Number(btn.dataset.i), 1);
+    salvarEstado();
+    document.getElementById('team-chips').innerHTML = teamChipsHTML();
+    return;
+  }
+  if(act === 'clean-teams'){
+    const { out, removed } = limparDuplicados(state.settings.teams);
+    state.settings.teams = out;
+    salvarEstado();
+    document.getElementById('team-chips').innerHTML = teamChipsHTML();
+    toast(removed > 0 ? `${removed} duplicado${removed===1?'':'s'} removido${removed===1?'':'s'}` : 'Nenhum duplicado encontrado');
+    return;
+  }
+
+  if(act === 'set-theme'){
+    state.settings.theme = btn.dataset.theme;
+    salvarEstado(); aplicarTema(state.settings.theme);
+    document.querySelectorAll('.color-swatch').forEach(s =>
+      s.classList.toggle('active', s.dataset.theme === state.settings.theme)
+    );
+    toast('Tema atualizado');
+    return;
+  }
+
+  if(act === 'pick-photo'){ document.getElementById('photo-input').click(); return; }
+  if(act === 'remove-photo'){
+    state.settings.playerPhoto = '';
+    salvarEstado(); renderAvatar(); render(); toast('Foto removida');
+    return;
+  }
+
+  if(act === 'export'){
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type:'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `agenda-backup-${hojeISO()}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    return;
+  }
+  if(act === 'import'){ document.getElementById('file-input').click(); return; }
+  if(act === 'wipe'){
+    if(!confirm('Apagar TODOS os dados? Essa ação não pode ser desfeita.')) return;
+    if(!confirm('Tem certeza mesmo?')) return;
+    state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+    salvarEstado(); aplicarTema(state.settings.theme); aplicarModo(state.settings.themeMode); render(); toast('Dados apagados');
+    return;
+  }
+});
+
+/* ================ UPLOADS ================ */
+document.addEventListener('change', async e => {
+  if(e.target.id === 'photo-input'){
+    const file = e.target.files[0];
+    if(!file) return;
+    try{
+      const b64 = await processarImagem(file);
+      state.settings.playerPhoto = b64;
+      salvarEstado(); renderAvatar(); render(); toast('Foto atualizada');
+    }catch(err){ toast('Não foi possível carregar'); }
+    e.target.value = '';
+    return;
+  }
+  if(e.target.id === 'photo-input-global'){
+    const file = e.target.files[0];
+    if(!file) return;
+    try{
+      const b64 = await processarImagem(file);
+      state.settings.playerPhoto = b64;
+      salvarEstado(); renderAvatar(); renderPerfilSheet();
+      toast('Foto atualizada');
+    }catch(err){ toast('Não foi possível carregar'); }
+    e.target.value = '';
+    return;
+  }
+  if(e.target.id === 'file-input'){
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try{
+        const p = JSON.parse(reader.result);
+        if(!p || typeof p !== 'object') throw new Error('inválido');
+        state = {
+          settings: Object.assign({}, DEFAULT_STATE.settings, p.settings||{}),
+          games: Array.isArray(p.games) ? p.games : []
+        };
+        salvarEstado(); aplicarTema(state.settings.theme); aplicarModo(state.settings.themeMode);
+        toast('Backup importado'); render();
+      }catch(err){ toast('Arquivo inválido'); }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  }
+});
+
+document.getElementById('fab').addEventListener('click', () => abrirForm(null));
+
+/* ================ BOOT ================ */
+(function boot(){
+  aplicarTema(state.settings.theme);
+  aplicarModo(state.settings.themeMode);
+  renderAvatar();
+
+  setTimeout(async () => {
+    document.getElementById('splash').classList.add('hide');
+    setTimeout(() => document.getElementById('splash')?.remove(), 600);
+
+    const { data:{ session } } = await sb.auth.getSession();
+    if(session){
+      const remoto = await carregarEstadoRemoto();
+      if(remoto && typeof remoto === 'object'){
+        state = {
+          settings: Object.assign({}, DEFAULT_STATE.settings, remoto.settings||{}),
+          games: Array.isArray(remoto.games) ? remoto.games : []
+        };
+      }
+      const u = (session.user.email || '').split('@')[0];
+      const perfil = (u === 'admin') ? 'admin' : 'player';
+      sessao = { perfil, nome: state.settings.playerName || (perfil==='admin'?'Admin':'Jogador') };
+      salvarSessao(sessao);
+      entrarApp();
+    } else {
+      document.getElementById('login').style.display = 'flex';
+    }
+  }, 900);
+})();
+</script>
+</body>
+</html>
